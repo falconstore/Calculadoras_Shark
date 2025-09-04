@@ -54,6 +54,16 @@ export function getFreeProfHTML() {
       margin-bottom: 1.5rem;
     }
 
+    .calc-logo {
+    height: 64px !important;
+    width: auto !important;
+    margin-bottom: 0.75rem !important;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1)) !important;
+    display: block !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    }
+
     .calc-title {
       font-size: 1.75rem;
       font-weight: 800;
