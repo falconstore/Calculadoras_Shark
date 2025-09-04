@@ -346,6 +346,7 @@ export function getFreeProfHTML() {
 </head>
 <body>
   <div class="calc-header">
+    <img src="assets/logo.png" alt="Shark 100% Green" class="calc-logo">
     <h1 class="calc-title">Calculadora Shark FreePro</h1>
     <p class="calc-subtitle">Otimize seus lucros com freebets de apostas seguras - estratégias para perder a qualificação e ganhar a freebet</p>
   </div>
