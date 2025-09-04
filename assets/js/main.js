@@ -16,7 +16,7 @@ class App {
 
   async init() {
     try {
-      console.log('Iniciando aplicação FreePro...');
+      console.log('Iniciando Calculadoras Shark 100% Green...');
       
       // Inicializa tema
       this.theme.init();
@@ -24,7 +24,7 @@ class App {
       // Carrega aplicação principal diretamente
       await this.loadMainApp();
       
-      console.log('Aplicação FreePro inicializada com sucesso');
+      console.log('Calculadoras Shark 100% Green inicializadas com sucesso');
     } catch (error) {
       console.error('Erro ao inicializar app:', error);
       this.showError('Erro ao inicializar aplicação');
@@ -96,7 +96,7 @@ class App {
     container.innerHTML = `
       <div class="post-login-loading">
         <div class="post-login-content">
-          <div class="post-login-title">⚡ Carregando FreePro</div>
+          <div class="post-login-title"> Carregando Shark 100% Green</div>
           <div class="post-login-spinner"></div>
           <div class="post-login-message">Inicializando calculadoras profissionais...</div>
         </div>
@@ -131,6 +131,6 @@ class App {
 // Inicializa app quando DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
   const app = new App();
-  window.FreePro = app; // Para debug global
+  window.SharkGreen = app; // Para debug global
   app.init();
 });
