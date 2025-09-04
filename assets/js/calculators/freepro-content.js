@@ -346,7 +346,7 @@ export function getFreeProfHTML() {
 </head>
 <body>
   <div class="calc-header">
-    <h1 class="calc-title">Calculadora FreePro</h1>
+    <h1 class="calc-title">Calculadora Shark FreePro</h1>
     <p class="calc-subtitle">Otimize seus lucros com freebets de apostas seguras - estratégias para perder a qualificação e ganhar a freebet</p>
   </div>
 
@@ -366,7 +366,7 @@ export function getFreeProfHTML() {
   <div class="card card-promo">
     <div class="card-header">
       <div class="card-title">Casa Promoção</div>
-      <div class="badge">FreePro</div>
+      <div class="badge">Shark Green</div>
     </div>
     <div class="form-grid form-grid-3">
       <div class="form-group">
@@ -424,7 +424,7 @@ export function getFreeProfHTML() {
 
   <div class="card" id="results" style="display:none">
     <div class="card-header">
-      <div class="card-title">Resultados FreePro</div>
+      <div class="card-title">Resultados Shark FreePro</div>
     </div>
     <div style="overflow-x:auto">
       <table class="results-table">
