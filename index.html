@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FreePro - Calculadoras Profissionais</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/themes.css">
+  <link rel="stylesheet" href="assets/css/responsive.css">
+</head>
+<body>
+  <header class="main-header">
+    <div class="container">
+      <h1 class="main-title">FreePro</h1>
+      <p class="main-subtitle">Ferramentas profissionais para otimização de apostas esportivas</p>
+      <div class="header-controls">
+        <button id="themeToggle" class="theme-toggle">
+          🌙 Tema Escuro
+        </button>
+        
+        <!-- Informações do usuário -->
+        <div id="userInfo" class="user-info hidden">
+          <div>
+            <div id="userEmail" class="user-email"></div>
+            <div id="userStatus" class="user-status"></div>
+            <div id="userExpires" class="user-expires"></div>
+          </div>
+          <button id="logoutBtn" class="logout-btn">Sair</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Screens serão carregadas dinamicamente -->
+  <div id="app-container"></div>
+
+  <!-- Firebase SDK -->
+  <script type="module" src="assets/js/config/firebase.js"></script>
+  
+  <!-- Scripts principais -->
+  <script type="module" src="assets/js/main.js"></script>
+</body>
+</html>
