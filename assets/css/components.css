@@ -770,3 +770,68 @@
   color: var(--text-secondary);
   font-size: 0.875rem;
 }
+
+/* === LOGO E TÍTULO === */
+.logo-title-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.main-logo {
+  height: 80px;
+  width: auto;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+  transition: all 0.3s ease;
+}
+
+.main-logo:hover {
+  transform: scale(1.05);
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.3));
+}
+
+.title-group {
+  text-align: center;
+}
+
+/* === LOGO NAS CALCULADORAS === */
+.calc-logo {
+  height: 48px;
+  width: auto;
+  margin-bottom: 0.75rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+/* === RESPONSIVIDADE DA LOGO === */
+@media (max-width: 768px) {
+  .logo-title-container {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .main-logo {
+    height: 64px;
+  }
+  
+  .calc-logo {
+    height: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-logo {
+    height: 56px;
+  }
+  
+  .calc-logo {
+    height: 36px;
+  }
+}
+
+/* === TEMA CLARO === */
+[data-theme="light"] .main-logo {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+}
