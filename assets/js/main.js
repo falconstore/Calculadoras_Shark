@@ -65,13 +65,19 @@ class App {
     }
   }
 
-  async loadMainApp() {
-    try {
-      console.log('Carregando aplicação principal...');
+ async loadMainApp() {
+  try {
+    console.log('Carregando aplicação principal...');
+    
+    // Mostra loading pós-login
+    this.showPostLoginLoading();
+    
+    // Simula carregamento de 3 segundos
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    const container = document.getElementById('app-container');
       
-      const container = document.getElementById('app-container');
-      
-      // Template das calculadoras
+    // Template das calculadoras
       const html = `
         <div role="tablist" aria-label="Calculadoras" class="tabs-container">
           <button id="tabBtn1" role="tab" aria-selected="true" aria-controls="panel-1" class="tab" tabindex="0">
@@ -119,6 +125,19 @@ class App {
       this.showError('Erro ao carregar calculadoras');
     }
   }
+
+showPostLoginLoading() {
+  const container = document.getElementById('app-container');
+  container.innerHTML = `
+    <div class="post-login-loading">
+      <div class="post-login-content">
+        <div class="post-login-title">🚀 Carregando FreePro</div>
+        <div class="post-login-spinner"></div>
+        <div class="post-login-message">Inicializando calculadoras...</div>
+      </div>
+    </div>
+  `;
+}
 
   async loadAuthScreens() {
     try {
