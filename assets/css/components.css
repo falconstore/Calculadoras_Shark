@@ -799,10 +799,13 @@
 
 /* === LOGO NAS CALCULADORAS === */
 .calc-logo {
-  height: 48px;
+  height: 64px;
   width: auto;
   margin-bottom: 0.75rem;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* === RESPONSIVIDADE DA LOGO === */
@@ -817,7 +820,7 @@
   }
   
   .calc-logo {
-    height: 40px;
+    height: 52px;
   }
 }
 
@@ -827,7 +830,7 @@
   }
   
   .calc-logo {
-    height: 36px;
+    height: 44px;
   }
 }
 
