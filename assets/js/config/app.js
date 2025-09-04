@@ -3,7 +3,7 @@
 
 export const APP_CONFIG = {
   // Informações básicas
-  name: 'FreePro',
+  name: 'Calculadoras Shark 100% Green',
   version: '2.0.0',
   
   // URLs dos planos de assinatura
@@ -67,11 +67,11 @@ export function isDevelopment() {
 // Função para log de debug
 export function debugLog(message, ...args) {
   if (isDevelopment()) {
-    console.log(`[FreePro] ${message}`, ...args);
+    console.log(`[Shark Green] ${message}`, ...args);
   }
 }
 
 // Função para log de erro
 export function errorLog(message, error = null) {
-  console.error(`[FreePro Error] ${message}`, error);
+ console.error(`[Shark Green Error] ${message}`, error);
 }
