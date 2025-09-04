@@ -1,6 +1,4 @@
-// PASSO 10 - assets/js/auth/authentication.js
-// Sistema completo de autenticação
-
+// assets/js/auth/authentication.js - VERSÃO DEBUG
 import { APP_CONFIG } from '../config/app.js';
 
 export class Auth {
@@ -10,11 +8,19 @@ export class Auth {
   }
 
   init() {
+    console.log('Auth.init() chamado');
     this.bindEvents();
-    this.autoLogin();
+    
+    // BYPASS TEMPORÁRIO - força mostrar login
+    setTimeout(() => {
+      console.log('Forçando exibição da tela de login...');
+      this.showScreen('login');
+      this.notifyStateChange();
+    }, 1000);
   }
 
   bindEvents() {
+    console.log('Binding events...');
     // Login form
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
@@ -73,6 +79,7 @@ export class Auth {
   }
 
   async loginUser(email, password) {
+    console.log('Tentativa de login:', email);
     const loginText = document.getElementById('loginText');
     const loginSpinner = document.getElementById('loginSpinner');
     
@@ -80,14 +87,14 @@ export class Auth {
       if (loginText) loginText.classList.add('hidden');
       if (loginSpinner) loginSpinner.classList.remove('hidden');
 
-      if (!email) throw new Error(APP_CONFIG.errorMessages.auth.emailRequired);
+      if (!email) throw new Error('E-mail é obrigatório');
       if (!password || password.length < 6) {
-        throw new Error(APP_CONFIG.errorMessages.auth.passwordTooShort);
+        throw new Error('Senha deve ter pelo menos 6 caracteres');
       }
 
       // Aguarda Firebase estar pronto
       if (!window.firebaseDb) {
-        throw new Error(APP_CONFIG.errorMessages.auth.firebaseNotReady);
+        throw new Error('Firebase não inicializado');
       }
 
       // Busca usuário no Firestore
@@ -95,18 +102,21 @@ export class Auth {
       const snap = await window.firebaseGetDoc(docRef);
 
       if (!snap.exists()) {
-        throw new Error(APP_CONFIG.errorMessages.auth.userNotFound);
+        throw new Error('Usuário não encontrado');
       }
 
       const userData = snap.data();
+      console.log('Dados do usuário:', userData);
 
       // Valida senha
       if (!('password' in userData) || String(userData.password) !== String(password)) {
-        throw new Error(APP_CONFIG.errorMessages.auth.incorrectPassword);
+        throw new Error('Senha incorreta');
       }
 
       // Verifica assinatura
       const subscriptionCheck = await this.checkSubscription(email);
+      console.log('Check da assinatura:', subscriptionCheck);
+      
       if (!subscriptionCheck.valid) {
         if (subscriptionCheck.reason === 'expired') {
           this.currentUser = { email, ...subscriptionCheck.userData };
@@ -116,16 +126,14 @@ export class Auth {
           this.notifyStateChange();
           return;
         }
-        if (subscriptionCheck.reason === 'inactive') {
-          throw new Error(APP_CONFIG.errorMessages.auth.subscriptionInactive);
-        }
-        throw new Error('Erro na verificação da assinatura: ' + subscriptionCheck.reason);
+        throw new Error('Problema na assinatura: ' + subscriptionCheck.reason);
       }
 
       // Login bem-sucedido
       this.currentUser = { email, ...subscriptionCheck.userData, subscriptionValid: true };
       localStorage.setItem(APP_CONFIG.storage.userKey, JSON.stringify(this.currentUser));
       
+      console.log('Login bem-sucedido!');
       this.updateUserInfo();
       this.notifyStateChange();
       
@@ -188,39 +196,8 @@ export class Auth {
     this.notifyStateChange();
   }
 
-  async autoLogin() {
-    const savedUser = localStorage.getItem(APP_CONFIG.storage.userKey);
-    if (!savedUser) {
-      this.showScreen('login');
-      this.notifyStateChange();
-      return;
-    }
-
-    try {
-      const userData = JSON.parse(savedUser);
-      const subscriptionCheck = await this.checkSubscription(userData.email);
-
-      if (subscriptionCheck.valid) {
-        this.currentUser = { ...userData, ...subscriptionCheck.userData, subscriptionValid: true };
-        localStorage.setItem(APP_CONFIG.storage.userKey, JSON.stringify(this.currentUser));
-        this.updateUserInfo();
-        this.notifyStateChange();
-      } else if (subscriptionCheck.reason === 'expired') {
-        this.currentUser = { ...userData, ...subscriptionCheck.userData };
-        localStorage.setItem(APP_CONFIG.storage.userKey, JSON.stringify(this.currentUser));
-        this.showScreen('expired');
-        this.updateUserInfo();
-        this.notifyStateChange();
-      } else {
-        this.logout();
-      }
-    } catch (error) {
-      console.error('Erro no auto-login:', error);
-      this.logout();
-    }
-  }
-
   showScreen(screen) {
+    console.log('Mostrando tela:', screen);
     const screens = {
       login: 'loginScreen',
       expired: 'expiredScreen',
@@ -278,6 +255,7 @@ export class Auth {
   }
 
   notifyStateChange() {
+    console.log('Notificando mudança de estado, usuário atual:', this.currentUser);
     this.stateChangeCallbacks.forEach(callback => {
       try {
         callback(this.currentUser);
