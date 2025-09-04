@@ -5,42 +5,123 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>FreePro - Calculadoras Profissionais</title>
   
-  <!-- CSS -->
+  <!-- Meta tags para SEO -->
+  <meta name="description" content="Calculadoras profissionais para arbitragem e freebets em apostas esportivas. ArbiPro e FreePro para maximizar seus lucros.">
+  <meta name="keywords" content="arbitragem, apostas esportivas, freebet, calculadora, lucro garantido">
+  <meta name="author" content="FreePro">
+  
+  <!-- CSS Modules - NA ORDEM CORRETA -->
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/components.css">
   <link rel="stylesheet" href="assets/css/themes.css">
   <link rel="stylesheet" href="assets/css/responsive.css">
+  
+  <!-- Preload do JavaScript principal -->
+  <link rel="preload" href="assets/js/main.js" as="script">
 </head>
 <body>
-  <header class="main-header">
+  <!-- Header -->
+  <header class="main-header" role="banner">
     <div class="container">
       <h1 class="main-title">FreePro</h1>
       <p class="main-subtitle">Ferramentas profissionais para otimização de apostas esportivas</p>
+      
       <div class="header-controls">
-        <button id="themeToggle" class="theme-toggle">
+        <button id="themeToggle" class="theme-toggle" aria-label="Alternar tema">
           🌙 Tema Escuro
         </button>
         
-        <!-- Informações do usuário -->
-        <div id="userInfo" class="user-info hidden">
+        <!-- User info (populated dynamically) -->
+        <div id="userInfo" class="user-info hidden" role="region" aria-label="Informações do usuário">
           <div>
             <div id="userEmail" class="user-email"></div>
             <div id="userStatus" class="user-status"></div>
             <div id="userExpires" class="user-expires"></div>
           </div>
-          <button id="logoutBtn" class="logout-btn">Sair</button>
+          <button id="logoutBtn" class="logout-btn" aria-label="Fazer logout">Sair</button>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- Screens serão carregadas dinamicamente -->
-  <div id="app-container"></div>
+  <!-- Main content area -->
+  <main role="main">
+    <!-- App container - content loaded dynamically -->
+    <div id="app-container" aria-live="polite">
+      <!-- Loading state -->
+      <div class="container" style="text-align: center; margin: 2rem 0;">
+        <div class="auth-container">
+          <h2 style="color: var(--primary); margin-bottom: 1rem;">⚡ Carregando FreePro</h2>
+          <div class="loading-spinner" style="margin: 0 auto;"></div>
+          <p style="color: var(--text-secondary); margin-top: 1rem;">
+            Inicializando sistema...
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
 
-  <!-- Firebase SDK -->
-  <script type="module" src="assets/js/config/firebase.js"></script>
-  
-  <!-- Scripts principais -->
+  <!-- Footer -->
+  <footer class="container" style="text-align: center; padding: 2rem 0; border-top: 1px solid var(--border); margin-top: 2rem;">
+    <p style="color: var(--text-muted); font-size: 0.875rem;">
+      © 2025 FreePro. Todos os direitos reservados.
+    </p>
+    <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.5rem;">
+      v2.0.0 - Calculadoras profissionais para apostas esportivas
+    </p>
+  </footer>
+
+  <!-- Error fallback (hidden by default) -->
+  <div id="error-fallback" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999;">
+    <div class="auth-container" style="max-width: 500px;">
+      <h2 style="color: var(--danger); margin-bottom: 1rem;">❌ Erro Crítico</h2>
+      <p id="error-message" style="color: var(--text-secondary); margin-bottom: 2rem;"></p>
+      <button onclick="location.reload()" class="btn btn-primary" style="margin-right: 1rem;">
+        Recarregar Página
+      </button>
+      <button onclick="document.getElementById('error-fallback').classList.add('hidden')" class="btn btn-secondary">
+        Fechar
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Application Module -->
   <script type="module" src="assets/js/main.js"></script>
+  
+  <!-- Error Handling -->
+  <script>
+    // Global error handler
+    window.addEventListener('error', function(e) {
+      console.error('Global error:', e.error);
+      showErrorFallback('Erro inesperado na aplicação: ' + (e.error?.message || 'Erro desconhecido'));
+    });
+
+    window.addEventListener('unhandledrejection', function(e) {
+      console.error('Unhandled promise rejection:', e.reason);
+      showErrorFallback('Erro de promessa não tratada: ' + (e.reason?.message || 'Erro desconhecido'));
+    });
+
+    function showErrorFallback(message) {
+      const fallback = document.getElementById('error-fallback');
+      const messageEl = document.getElementById('error-message');
+      if (fallback && messageEl) {
+        messageEl.textContent = message;
+        fallback.classList.remove('hidden');
+      }
+    }
+
+    // Check for basic requirements
+    if (!window.fetch) {
+      showErrorFallback('Seu navegador não suporta recursos necessários. Por favor, atualize seu navegador.');
+    }
+
+    // Timeout fallback
+    setTimeout(() => {
+      const container = document.getElementById('app-container');
+      if (container && container.innerHTML.includes('Carregando FreePro')) {
+        showErrorFallback('Aplicação demorou muito para carregar. Verifique sua conexão e tente novamente.');
+      }
+    }, 10000);
+  </script>
 </body>
 </html>
