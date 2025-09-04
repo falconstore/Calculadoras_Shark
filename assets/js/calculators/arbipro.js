@@ -205,9 +205,9 @@ export class ArbiPro {
     if (!app) return;
 
     app.innerHTML = `
-      <div style="text-align: center; margin-bottom: 1.5rem;">
-        <img src="assets/logo.png" alt="Shark 100% Green" class="calc-logo">
-  <h1 style="font-size: 1.75rem; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem;">Calculadora Shark ArbiPro</h1>
+      <div class="calc-header">
+  <img src="assets/logo.png" alt="Shark 100% Green" class="calc-logo">
+  <h1 style="font-size: 1.75rem; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem;">Calculadora ArbiPro</h1>
   <p style="color: var(--text-secondary); font-size: 0.875rem;">Calcule stakes otimizados para garantir lucro em qualquer resultado</p>
 </div>
 
