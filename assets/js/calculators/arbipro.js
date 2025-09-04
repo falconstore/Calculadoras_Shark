@@ -206,7 +206,7 @@ export class ArbiPro {
 
     app.innerHTML = `
       <div style="text-align: center; margin-bottom: 1.5rem;">
-        <h1 style="font-size: 1.75rem; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem;">Calculadora ArbiPro</h1>
+        <h1 style="font-size: 1.75rem; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem;">Calculadora Shark ArbiPro</h1>
         <p style="color: var(--text-secondary); font-size: 0.875rem;">Calcule stakes otimizados para garantir lucro em qualquer resultado</p>
       </div>
 
@@ -255,7 +255,7 @@ export class ArbiPro {
       </div>
 
       <div class="card" style="margin-top: 1.5rem;">
-        <div class="section-title">Resultados ArbiPro</div>
+        <div class="section-title">Resultados Shark ArbiPro</div>
         <div style="overflow-x: auto;">
           <table class="results-table">
             <thead>
