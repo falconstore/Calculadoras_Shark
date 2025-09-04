@@ -567,3 +567,105 @@
     padding: 0.75rem;
   }
 }
+
+/* ADICIONAR NO FINAL DO ARQUIVO assets/css/components.css */
+
+/* === SISTEMA DE ABAS (TABS) === */
+.tabs-container {
+  background: rgba(31, 41, 59, 0.8);
+  border-radius: 12px;
+  padding: 0.5rem;
+  display: flex;
+  gap: 0.25rem;
+  margin: 1.5rem auto;
+  max-width: 500px;
+  border: 1px solid var(--border);
+  transition: background 0.3s ease;
+}
+
+[data-theme="light"] .tabs-container {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.tab {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.tab[aria-selected="true"] {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.tab:hover:not([aria-selected="true"]) {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--text-primary);
+}
+
+.tab:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* === PANELS DAS ABAS === */
+.panel {
+  background: rgba(55, 65, 81, 0.4);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  transition: background 0.3s ease;
+}
+
+[data-theme="light"] .panel {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+/* === RESPONSIVO PARA ABAS === */
+@media (max-width: 768px) {
+  .tabs-container {
+    flex-direction: column;
+    gap: 0.25rem;
+    margin: 1rem auto;
+    max-width: 100%;
+  }
+  
+  .tab {
+    padding: 0.625rem 1rem;
+    font-size: 0.8125rem;
+  }
+  
+  .panel {
+    padding: 1rem;
+    margin: 0.75rem 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .tabs-container {
+    margin: 0.75rem auto;
+  }
+  
+  .tab {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
+  
+  .panel {
+    padding: 0.75rem;
+  }
+}
