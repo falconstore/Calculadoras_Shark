@@ -255,3 +255,90 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* ADICIONAR NO FINAL DO ARQUIVO assets/css/components.css */
+
+/* === LAYOUT DOS PLANOS DE ASSINATURA === */
+.subscription-plans {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.plan-card {
+  background: rgba(31, 41, 59, 0.8);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+[data-theme="light"] .plan-card {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.plan-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.plan-card.popular {
+  border-color: var(--primary);
+  position: relative;
+}
+
+.plan-card.popular::before {
+  content: 'POPULAR';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.plan-name {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.plan-price {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--primary);
+  font-family: ui-monospace, monospace;
+  margin: 0.25rem 0;
+}
+
+.plan-period {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.plan-discount {
+  background: linear-gradient(135deg, var(--success), var(--secondary-dark));
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin: 0.5rem 0;
+  display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
