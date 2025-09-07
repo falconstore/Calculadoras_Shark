@@ -343,7 +343,7 @@ export class Navigation {
                   <span>✅ Estratégias visuais</span>
                   <span>✅ Lives exclusivas</span>
                 </div>
-                <a href="https://youtube.com/@sharkgreen" target="_blank" class="channel-btn">
+                <a href="https://www.youtube.com/@sharkuniverse" target="_blank" class="channel-btn">
                   Assistir Canal
                 </a>
               </div>
