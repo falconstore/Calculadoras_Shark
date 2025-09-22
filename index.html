@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
-  <!-- Header -->
+  <!-- Header LIMPO -->
   <header class="main-header" role="banner">
     <div class="container">
       <div class="logo-title-container">
@@ -29,20 +29,11 @@
         </div>
       </div>
 
+      <!-- Header controls SEM sistema de usuário -->
       <div class="header-controls">
         <button id="themeToggle" class="theme-toggle" aria-label="Alternar tema">
           🌙 Tema Escuro
         </button>
-        
-        <!-- User info (populated dynamically) -->
-        <div id="userInfo" class="user-info hidden" role="region" aria-label="Informações do usuário">
-          <div>
-            <div id="userEmail" class="user-email"></div>
-            <div id="userStatus" class="user-status"></div>
-            <div id="userExpires" class="user-expires"></div>
-          </div>
-          <button id="logoutBtn" class="logout-btn" aria-label="Fazer logout">Sair</button>
-        </div>
       </div>
     </div>
   </header>
@@ -51,7 +42,7 @@
   <main role="main">
     <!-- App container - content loaded dynamically -->
     <div id="app-container" aria-live="polite">
-      <!-- Loading inicial -->
+      <!-- Loading inicial simples -->
       <div class="loading-container">
         <div class="loading-box">
           <div class="loading-spinner"></div>

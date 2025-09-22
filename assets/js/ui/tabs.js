@@ -15,12 +15,13 @@ export class TabSystem {
   }
 
   bindElements() {
-    this.tabs = Array.from(document.querySelectorAll('[role="tab"]'));
-    this.panels = [
-      document.getElementById('panel-1'),
-      document.getElementById('panel-2')
-    ];
-  }
+  this.tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+  this.panels = [
+    document.getElementById('panel-1'),
+    document.getElementById('panel-2'),
+    document.getElementById('panel-3') // ← NOVA LINHA
+  ];
+}
 
   bindEvents() {
     // Click nos tabs
@@ -61,34 +62,34 @@ export class TabSystem {
   }
 
   setActive(index) {
-    if (index < 0 || index >= this.tabs.length) return;
+  if (index < 0 || index >= this.tabs.length) return;
 
-    // Atualiza tabs
-    this.tabs.forEach((tab, i) => {
-      const isSelected = i === index;
-      tab.setAttribute('aria-selected', isSelected ? 'true' : 'false');
-      tab.tabIndex = isSelected ? 0 : -1;
-      
-      if (isSelected) tab.focus();
-    });
+  // Atualiza tabs
+  this.tabs.forEach((tab, i) => {
+    const isSelected = i === index;
+    tab.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+    tab.tabIndex = isSelected ? 0 : -1;
+    
+    if (isSelected) tab.focus();
+  });
 
-    // Atualiza panels
-    this.panels.forEach((panel, i) => {
-      if (panel) {
-        panel.hidden = i !== index;
-      }
-    });
-
-    this.activeIndex = index;
-
-    // Carrega calculadora FreePro quando necessário
-    if (index === 1) {
-      this.loadFreePro();
+  // Atualiza panels
+  this.panels.forEach((panel, i) => {
+    if (panel) {
+      panel.hidden = i !== index;
     }
+  });
 
-    // Dispara evento para outros componentes
-    this.notifyTabChange(index);
+  this.activeIndex = index;
+
+  // Carrega calculadora FreePro quando necessário
+  if (index === 1) {
+    this.loadFreePro();
   }
+
+  // Dispara evento para outros componentes
+  this.notifyTabChange(index);
+}
 
   loadFreePro() {
     const iframe = document.getElementById('calc2frame');
@@ -177,11 +178,12 @@ export class TabSystem {
   }
 
   notifyTabChange(index) {
-    const event = new CustomEvent('tabChanged', {
-      detail: { index, tabName: index === 0 ? 'arbipro' : 'freepro' }
-    });
-    document.dispatchEvent(event);
-  }
+  const tabNames = ['arbipro', 'freepro', 'casas-regulamentadas']; // ← ATUALIZADA
+  const event = new CustomEvent('tabChanged', {
+    detail: { index, tabName: tabNames[index] || 'unknown' }
+  });
+  document.dispatchEvent(event);
+}
 
   getCurrentTab() {
     return this.activeIndex;

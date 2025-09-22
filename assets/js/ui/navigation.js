@@ -1,10 +1,11 @@
-// assets/js/ui/navigation.js
-// Sistema de navegação completo - VERSÃO COM ÍCONES REAIS
+// assets/js/ui/navigation.js - VERSÃO ATUALIZADA
+// Sistema de navegação completo - COM CASAS REGULAMENTADAS
 
 export class Navigation {
   constructor() {
     this.currentPage = 'calculadoras';
-    this.pages = ['calculadoras', 'sobre', 'contato'];
+    this.pages = ['calculadoras', 'casasregulamentadas', 'sobre', 'contato'];
+    this.casasRegulamentadas = null; // Referência será definida pelo main.js
   }
 
   init() {
@@ -69,6 +70,9 @@ export class Navigation {
       case 'calculadoras':
         this.showCalculadoras();
         break;
+      case 'casasregulamentadas':
+        this.showCasasRegulamentadas();
+        break;
       case 'sobre':
         this.showSobre();
         break;
@@ -82,10 +86,12 @@ export class Navigation {
 
   hideAllPages() {
     const calculadoras = document.getElementById('calculadoras-content');
+    const casasRegulamentadas = document.getElementById('casas-regulamentadas-content');
     const sobre = document.getElementById('sobre-content');
     const contato = document.getElementById('contato-content');
     
     if (calculadoras) calculadoras.classList.add('hidden');
+    if (casasRegulamentadas) casasRegulamentadas.classList.add('hidden');
     if (sobre) sobre.classList.add('hidden');
     if (contato) contato.classList.add('hidden');
   }
@@ -94,6 +100,14 @@ export class Navigation {
     const content = document.getElementById('calculadoras-content');
     if (content) {
       content.classList.remove('hidden');
+    }
+  }
+
+  showCasasRegulamentadas() {
+    const content = document.getElementById('casas-regulamentadas-content');
+    if (content) {
+      content.classList.remove('hidden');
+      this.renderCasasRegulamentadas();
     }
   }
 
@@ -110,6 +124,24 @@ export class Navigation {
     if (content) {
       content.classList.remove('hidden');
       this.renderContato();
+    }
+  }
+
+  renderCasasRegulamentadas() {
+    const container = document.getElementById('casas-regulamentadas-content');
+    if (!container) return;
+
+    container.innerHTML = `
+      <div class="container">
+        <div id="casas-content"></div>
+      </div>
+    `;
+
+    // Inicializa o conteúdo da página
+    if (this.casasRegulamentadas) {
+      setTimeout(() => {
+        this.casasRegulamentadas.onPageActivated();
+      }, 100);
     }
   }
 

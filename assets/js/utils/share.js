@@ -1,266 +1,258 @@
 // assets/js/utils/share.js
-// Sistema de compartilhamento de configurações
+// Versão compatível com chaves "curtas" e "verbosas" sem quebrar o que já funciona.
+// - Aceita payloads do shareui.js (n/r/p/cov/h com o/s/c/f/i/l/x)
+// - Aceita payloads verbosos (numEntradas/roundStep/promoOdd/coverages/...)
+// - Mantém a geração do link encapsulada; se existir um criador externo, usa ele (não quebra seu fluxo atual).
 
 export class ShareSystem {
-  constructor() {
-    this.baseUrl = window.location.origin + window.location.pathname;
-  }
-
-  // Gera link compartilhável para ArbiPro
+  // ---------------------------
+  // ARBIPRO
+  // ---------------------------
   generateArbiProLink(data) {
-    const config = {
-      t: 'arbipro', // tipo
-      n: data.numHouses || 2, // número de casas
-      r: data.rounding || 0.01, // arredondamento
-      h: data.houses.slice(0, data.numHouses).map(house => ({
-        o: house.odd || '', // odd
-        s: house.stake || '', // stake
-        c: house.commission, // comissão (null se não tem)
-        f: house.freebet || false, // freebet
-        i: house.increase, // aumento de odd (null se não tem)
-        l: house.lay || false, // lay
-        x: house.fixedStake || false // stake fixada
-      }))
-    };
+    // aceitar ambos formatos (curto e verbo)
+    const numHouses = data?.numHouses ?? data?.n ?? 2;
+    const rounding  = data?.rounding  ?? data?.r ?? 0.01;
 
+    const housesIn = Array.isArray(data?.houses) ? data.houses
+                    : Array.isArray(data?.h)      ? data.h
+                    : [];
+
+    // Normaliza cada casa no formato "curto" esperado pelo consumidor do link
+    const houses = housesIn.slice(0, numHouses).map((h) => ({
+      // odd / stake / commission
+      o: h?.o ?? h?.odd ?? '',
+      s: h?.s ?? h?.stake ?? '',
+      c: _nullishToNumberOrNull(h?.c ?? h?.commission),
+      // flags e extras
+      f: _toBool(h?.f ?? h?.freebet, false),
+      i: _nullishToNumberOrNull(h?.i ?? h?.increase),
+      l: _toBool(h?.l ?? h?.lay, false),
+      x: _toBool(h?.x ?? h?.fixedStake, false),
+    }));
+
+    const config = { t: 'arbipro', n: numHouses, r: rounding, h: houses };
     return this.createShareableLink(config);
   }
 
-  // Gera link compartilhável para FreePro
+  // ---------------------------
+  // FREEPRO
+  // ---------------------------
   generateFreeProLink(data) {
-    const config = {
-      t: 'freepro', // tipo
-      n: data.numEntradas || 3, // número de entradas
-      r: data.roundStep || 1.00, // arredondamento
-      // Casa promoção
-      p: {
-        o: data.promoOdd || '', // odd da casa
-        c: data.promoComm || '', // comissão
-        s: data.promoStake || '', // stake qualificação
-        f: data.freebetValue || '', // valor freebet
-        e: data.extractionRate || 70 // taxa extração
-      },
-      // Coberturas
-      cov: data.coverages || []
+    // aceitar ambos formatos (curto e verbo)
+    const n = data?.n ?? data?.numEntradas ?? 3;
+    const r = data?.r ?? data?.roundStep   ?? 1.0;
+
+    // Casa Promo (p)
+    const pIn = data?.p ?? {
+      o: data?.promoOdd ?? '',
+      c: data?.promoComm ?? '',
+      s: data?.promoStake ?? '',
+      f: data?.freebetValue ?? '',
+      e: data?.extractionRate ?? 70,
     };
 
+    const p = {
+      o: pIn?.o ?? data?.promoOdd ?? '',
+      c: pIn?.c ?? data?.promoComm ?? '',
+      s: pIn?.s ?? data?.promoStake ?? '',
+      f: pIn?.f ?? data?.freebetValue ?? '',
+      e: pIn?.e ?? data?.extractionRate ?? 70,
+    };
+
+    // Coberturas (cov / coverages)
+    const covIn = Array.isArray(data?.cov) ? data.cov
+                : Array.isArray(data?.coverages) ? data.coverages
+                : [];
+
+    const cov = covIn.map((c) => ({
+      odd:  c?.odd ?? c?.o ?? '',
+      comm: c?.comm ?? c?.c ?? '',
+      lay:  _toBool(c?.lay ?? c?.l, false),
+    }));
+
+    const config = { t: 'freepro', n, r, p, cov };
     return this.createShareableLink(config);
   }
 
-  // Cria link encurtado usando base64
+  // ---------------------------
+  // CRIAÇÃO DO LINK (não-invasivo)
+  // ---------------------------
   createShareableLink(config) {
+    // 1) Se existir algum criador externo (para manter seu fluxo atual), use-o.
+    //    - window.ShareCreateLink(config)   -> legado/projeto
+    //    - this._externalCreateShareableLink(config) -> injetável
     try {
-      const jsonStr = JSON.stringify(config);
-      const base64 = btoa(encodeURIComponent(jsonStr));
-      const shortId = this.generateShortId(base64);
-      
-      // Salva no localStorage para recuperação
-      const shareData = {
-        id: shortId,
-        config: config,
-        created: Date.now(),
-        expires: Date.now() + (30 * 24 * 60 * 60 * 1000) // 30 dias
-      };
-      
-      this.saveShareData(shortId, shareData);
-      
-      return {
-        fullUrl: `${this.baseUrl}?share=${base64}`,
-        shortUrl: `${this.baseUrl}?s=${shortId}`,
-        shareId: shortId
-      };
-    } catch (error) {
-      console.error('Erro ao criar link compartilhável:', error);
-      return null;
-    }
-  }
-
-  // Gera ID curto para link encurtado
-  generateShortId(base64) {
-    const hash = this.simpleHash(base64);
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    let num = Math.abs(hash);
-    
-    for (let i = 0; i < 8; i++) {
-      result += chars[num % chars.length];
-      num = Math.floor(num / chars.length);
-    }
-    
-    return result;
-  }
-
-  // Hash simples para gerar ID
-  simpleHash(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    return hash;
-  }
-
-  // Salva dados de compartilhamento
-  saveShareData(shortId, data) {
-    try {
-      const key = `share_${shortId}`;
-      localStorage.setItem(key, JSON.stringify(data));
-      
-      // Limpa dados antigos
-      this.cleanupOldShares();
-    } catch (error) {
-      console.warn('Não foi possível salvar dados de compartilhamento:', error);
-    }
-  }
-
-  // Limpa compartilhamentos expirados
-  cleanupOldShares() {
-    try {
-      const now = Date.now();
-      const keys = Object.keys(localStorage);
-      
-      keys.forEach(key => {
-        if (key.startsWith('share_')) {
-          try {
-            const data = JSON.parse(localStorage.getItem(key));
-            if (data.expires && data.expires < now) {
-              localStorage.removeItem(key);
-            }
-          } catch (e) {
-            localStorage.removeItem(key); // Remove dados corrompidos
-          }
-        }
-      });
-    } catch (error) {
-      console.warn('Erro ao limpar compartilhamentos antigos:', error);
-    }
-  }
-
-  // Carrega configuração do URL
-  loadFromUrl() {
-    try {
-      const urlParams = new URLSearchParams(window.location.search);
-      
-      // Link completo (base64)
-      const shareParam = urlParams.get('share');
-      if (shareParam) {
-        const jsonStr = decodeURIComponent(atob(shareParam));
-        return JSON.parse(jsonStr);
+      if (typeof window !== 'undefined' && typeof window.ShareCreateLink === 'function') {
+        return window.ShareCreateLink(config);
       }
-      
-      // Link curto
-      const shortParam = urlParams.get('s');
-      if (shortParam) {
-        const shareData = this.loadShareData(shortParam);
-        return shareData ? shareData.config : null;
+      if (typeof this._externalCreateShareableLink === 'function') {
+        return this._externalCreateShareableLink(config);
       }
-      
-      return null;
-    } catch (error) {
-      console.error('Erro ao carregar configuração do URL:', error);
-      return null;
+    } catch (_) {
+      // ignora e cai no fallback interno
     }
+
+    // 2) Fallback interno: gera URL atual + parâmetro ?share=payload
+    //    Mantemos tolerância a nomes já vistos: se já houver ?s= ou ?share=, preservamos a chave.
+    const url = new URL(typeof window !== 'undefined' ? window.location.href : 'https://example.com/');
+    const key = _detectShareKey(url.searchParams) ?? 'share';
+
+    const encoded = _encodePayload(config);
+    url.searchParams.set(key, encoded);
+
+    // Remove fragment antigo de share, se houver (higiene)
+    if (url.hash && /^#(s|share)=/i.test(url.hash.slice(1))) {
+      url.hash = '';
+    }
+    return url.toString();
   }
 
-  // Carrega dados de compartilhamento
-  loadShareData(shortId) {
-    try {
-      const key = `share_${shortId}`;
-      const data = localStorage.getItem(key);
-      
-      if (!data) return null;
-      
-      const shareData = JSON.parse(data);
-      
-      // Verifica se não expirou
-      if (shareData.expires && shareData.expires < Date.now()) {
-        localStorage.removeItem(key);
-        return null;
+  // ---------------------------
+  // OPCIONAL: leitura/parse do payload (tolerante)
+  // ---------------------------
+  static readFromUrl(currentHref) {
+    const url = new URL(currentHref || (typeof window !== 'undefined' ? window.location.href : 'https://example.com/'));
+    const sp  = url.searchParams;
+    const hash = (url.hash || '').replace(/^#/, '');
+
+    // aceita ?share=... , ?s=... , #share=... , #s=...
+    let raw = sp.get('share') || sp.get('s') || null;
+    if (!raw && hash) {
+      const parts = hash.split('=');
+      if (parts.length === 2 && (parts[0] === 'share' || parts[0] === 's')) {
+        raw = parts[1];
       }
-      
-      return shareData;
-    } catch (error) {
-      console.error('Erro ao carregar dados de compartilhamento:', error);
-      return null;
     }
-  }
+    if (!raw) return null;
 
-  // Remove parâmetros de compartilhamento da URL
-  cleanUrl() {
-    try {
-      const url = new URL(window.location);
-      url.searchParams.delete('share');
-      url.searchParams.delete('s');
-      
-      // Atualiza URL sem recarregar a página
-      window.history.replaceState({}, document.title, url.toString());
-    } catch (error) {
-      console.warn('Não foi possível limpar URL:', error);
-    }
-  }
-
-  // Copia link para área de transferência
-  async copyToClipboard(url) {
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(url);
-        return true;
-      } else {
-        // Fallback para navegadores mais antigos
-        const textArea = document.createElement('textarea');
-        textArea.value = url;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-9999px';
-        document.body.appendChild(textArea);
-        textArea.select();
-        const success = document.execCommand('copy');
-        document.body.removeChild(textArea);
-        return success;
-      }
-    } catch (error) {
-      console.error('Erro ao copiar para área de transferência:', error);
-      return false;
-    }
-  }
-
-  // Gera QR Code (opcional)
-  generateQRCodeUrl(url) {
-    // Usando serviço público para QR code
-    const encodedUrl = encodeURIComponent(url);
-    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodedUrl}`;
-  }
-
-  // Valida se uma configuração é válida
-  validateConfig(config) {
-    if (!config || typeof config !== 'object') return false;
-    
-    const validTypes = ['arbipro', 'freepro'];
-    if (!validTypes.includes(config.t)) return false;
-    
-    if (config.t === 'arbipro') {
-      return this.validateArbiProConfig(config);
-    } else if (config.t === 'freepro') {
-      return this.validateFreeProConfig(config);
-    }
-    
-    return false;
-  }
-
-  validateArbiProConfig(config) {
-    return (
-      typeof config.n === 'number' &&
-      config.n >= 2 && config.n <= 6 &&
-      Array.isArray(config.h) &&
-      config.h.length <= config.n
-    );
-  }
-
-  validateFreeProConfig(config) {
-    return (
-      typeof config.n === 'number' &&
-      config.n >= 2 && config.n <= 6 &&
-      config.p && typeof config.p === 'object'
-    );
+    return _decodePayload(raw);
   }
 }
+
+/* -------------------------------------------
+ * Helpers
+ * -----------------------------------------*/
+
+function _detectShareKey(params) {
+  if (!params) return null;
+  if (params.has('s')) return 's';
+  if (params.has('share')) return 'share';
+  return null;
+}
+
+function _encodePayload(obj) {
+  // Gera duas camadas de tolerância:
+  // 1) Tenta Base64URL(JSON) para ficar "limpo".
+  // 2) Se der erro, cai para encodeURIComponent(JSON).
+  try {
+    const json = JSON.stringify(obj);
+    const b64 = _toBase64Url(json);
+    return `b64:${b64}`;
+  } catch {
+    try {
+      return `j:${encodeURIComponent(JSON.stringify(obj))}`;
+    } catch {
+      // último recurso: string simples
+      return `j:${encodeURIComponent(String(obj))}`;
+    }
+  }
+}
+
+function _decodePayload(raw) {
+  // Aceita formatos:
+  // - "b64:...." (Base64URL JSON)
+  // - "j:%7B...%7D" (URI encoded JSON)
+  // - cru (tenta adivinhar)
+  let s = String(raw || '');
+
+  // Tenta detectar prefixo
+  if (s.startsWith('b64:')) {
+    const body = s.slice(4);
+    try {
+      const json = _fromBase64Url(body);
+      return JSON.parse(json);
+    } catch {
+      // continua tentando outros formatos
+    }
+  }
+  if (s.startsWith('j:')) {
+    const body = s.slice(2);
+    try {
+      const json = decodeURIComponent(body);
+      return JSON.parse(json);
+    } catch {
+      // cai no heurístico
+    }
+  }
+
+  // Heurística: se parecer base64url, tenta
+  if (/^[A-Za-z0-9_\-]+$/.test(s)) {
+    try {
+      const json = _fromBase64Url(s);
+      return JSON.parse(json);
+    } catch {
+      // ignora
+    }
+  }
+
+  // Último tiro: tenta URI -> JSON
+  try {
+    const json = decodeURIComponent(s);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
+function _toBase64Url(str) {
+  if (typeof btoa === 'function') {
+    // btoa espera bytes latin1; normaliza para UTF-8
+    const utf8 = unescape(encodeURIComponent(str));
+    return btoa(utf8).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+  }
+  // Node ou ambientes sem btoa
+  return Buffer.from(str, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function _fromBase64Url(b64url) {
+  const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+  const pad = b64.length % 4 === 2 ? '==' : b64.length % 4 === 3 ? '=' : '';
+  const full = b64 + pad;
+
+  if (typeof atob === 'function') {
+    const bin = atob(full);
+    // reconverte de latin1 para UTF-8
+    try {
+      return decodeURIComponent(escape(bin));
+    } catch {
+      // se der erro, devolve direto
+      return bin;
+    }
+  }
+  // Node ou ambientes sem atob
+  return Buffer.from(full, 'base64').toString('utf8');
+}
+
+function _toBool(v, fallback = false) {
+  if (typeof v === 'boolean') return v;
+  if (v === 'true') return true;
+  if (v === 'false') return false;
+  if (v == null) return fallback;
+  // 1/0
+  if (v === 1 || v === '1') return true;
+  if (v === 0 || v === '0') return false;
+  return Boolean(v);
+}
+
+function _nullishToNumberOrNull(v) {
+  if (v === '' || v == null) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+// Export opcional para uso externo (ex.: testes)
+export const ShareHelpers = {
+  encode: _encodePayload,
+  decode: _decodePayload,
+  base64url: { to: _toBase64Url, from: _fromBase64Url },
+};

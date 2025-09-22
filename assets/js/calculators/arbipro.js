@@ -245,13 +245,6 @@ export class ArbiPro {
           <div class="stat-value profit-highlight" id="roi">0,00%</div>
           <div class="stat-label">ROI Médio</div>
         </div>
-
-        <div class="stat-card" id="shareCard">
-          <div class="stat-label">Compartilhar</div>
-          <button id="shareBtn" class="btn-share-card" style="margin-top: 0.75rem; width: 100%; padding: 0.5rem; font-size: 0.75rem; border: none; border-radius: 6px; background: linear-gradient(135deg, #8b5cf6, #3b82f6); color: white; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
-            🔗 Compartilhar
-          </button>
-        </div>
       </div>
 
       <div class="card">
@@ -607,4 +600,4 @@ export class ArbiPro {
   if (thead) thead.innerHTML = headerHTML;
   if (tbody) tbody.innerHTML = rowsHTML;
  }
-  }
+}
