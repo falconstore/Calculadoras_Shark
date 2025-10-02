@@ -19,6 +19,14 @@ export const Navigation = () => {
     setIsMobileMenuOpen(false);
   };
 
+  const handleBetbraClick = () => {
+    window.open("https://betbra.bet.br/register/?affid=shark100", "_blank");
+  };
+
+  const handleVideoClick = () => {
+    window.open("https://www.youtube.com/watch?v=jRyoWL-plJ0&list=PLMxf7zH7RQEDdrP26qkavZC2o134fle2L", "_blank");
+  };
+
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -54,6 +62,13 @@ export const Navigation = () => {
             </Button>
             <Button
               variant="ghost"
+              onClick={handleVideoClick}
+              className="hover:text-primary"
+            >
+              Video Calculadoras
+            </Button>
+            <Button
+              variant="ghost"
               onClick={() => scrollToSection("sobre")}
               className="hover:text-primary"
             >
@@ -65,6 +80,20 @@ export const Navigation = () => {
               className="hover:text-primary"
             >
               Contato
+            </Button>
+            
+            {/* Separador */}
+            <div className="w-px h-6 bg-border/50" />
+            
+            {/* Botão Betbra Destacado */}
+            <Button
+              onClick={handleBetbraClick}
+              className="relative bg-[#00D9D9] text-black hover:bg-[#00C4C4] shadow-lg hover:shadow-xl transition-all font-bold"
+            >
+              <span className="flex flex-col items-center gap-0 leading-tight">
+                <span className="text-xs">Cadastro</span>
+                <span className="text-sm">Betbra</span>
+              </span>
             </Button>
           </div>
 
@@ -82,6 +111,17 @@ export const Navigation = () => {
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden py-4 space-y-2 animate-fade-in">
+            {/* Botão Betbra Mobile */}
+            <Button
+              onClick={handleBetbraClick}
+              className="w-full bg-[#00D9D9] text-black hover:bg-[#00C4C4] shadow-lg mb-3 font-bold"
+            >
+              <span className="flex flex-col items-center leading-tight">
+                <span className="text-sm">Cadastro Betbra</span>
+                <span className="text-xs opacity-70">Oferta Exclusiva</span>
+              </span>
+            </Button>
+
             <Button
               variant="ghost"
               onClick={() => scrollToSection("calculadoras")}
@@ -95,6 +135,13 @@ export const Navigation = () => {
               className="w-full justify-start hover:text-primary"
             >
               Casas Regulamentadas
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={handleVideoClick}
+              className="w-full justify-start hover:text-primary"
+            >
+              Video Calculadoras
             </Button>
             <Button
               variant="ghost"
