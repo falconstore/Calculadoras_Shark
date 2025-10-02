@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Navigation } from "@/components/Navigation";
 import { Hero } from "@/components/Hero";
+import { BetbraPromo } from "@/components/BetbraPromo";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Lazy load heavy components for better performance
@@ -23,6 +24,9 @@ const Index = () => {
     <div className="min-h-screen">
       <Navigation />
       <Hero />
+      
+      {/* Promoção Betbra */}
+      <BetbraPromo />
       
       {/* Calculadoras em Abas */}
       <Suspense fallback={<LoadingSection />}>
@@ -47,7 +51,7 @@ const Index = () => {
       <footer className="py-8 px-4 bg-muted/50 border-t border-border/50">
         <div className="container mx-auto text-center">
           <p className="text-muted-foreground">
-            © 2023 Shark Calculadoras - Ferramentas Profissionais de Apostas 
+            © 2024 Shark Calculadoras - Ferramentas Profissionais de Apostas • Código Aberto
           </p>
         </div>
       </footer>
