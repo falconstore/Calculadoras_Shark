@@ -47,7 +47,7 @@ const Index = () => {
       <footer className="py-8 px-4 bg-muted/50 border-t border-border/50">
         <div className="container mx-auto text-center">
           <p className="text-muted-foreground">
-            © 2024 Shark Calculadoras - Ferramentas Profissionais de Apostas • Código Aberto
+            © 2023 Shark Calculadoras - Ferramentas Profissionais de Apostas 
           </p>
         </div>
       </footer>
