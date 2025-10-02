@@ -1,0 +1,385 @@
+/* === ESTILOS MODERNOS ARBIPRO === */
+
+/* Header da calculadora */
+.calc-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+/* Grid de estatísticas no topo */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.6));
+  border: 2px solid hsl(var(--border) / 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.stat-card:hover {
+  border-color: hsl(var(--primary) / 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px hsl(var(--primary) / 0.2);
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: hsl(var(--foreground));
+  font-family: ui-monospace, 'SF Mono', Monaco, monospace;
+}
+
+.profit-highlight {
+  color: hsl(var(--success));
+  text-shadow: 0 0 20px hsl(var(--success) / 0.4);
+}
+
+.profit-positive {
+  color: hsl(var(--success)) !important;
+  font-weight: 700;
+}
+
+.profit-negative {
+  color: hsl(var(--destructive)) !important;
+  font-weight: 700;
+}
+
+/* Seção de título */
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid hsl(var(--border) / 0.3);
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Cards das casas */
+.house-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.house-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.7));
+  border: 2px solid hsl(var(--border) / 0.5);
+  border-radius: 16px;
+  padding: 1.5rem;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.house-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, hsl(var(--shark-gradient-start)), hsl(var(--shark-gradient-end)));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.house-card:hover::before {
+  opacity: 1;
+}
+
+.house-card:hover {
+  border-color: hsl(var(--primary) / 0.8);
+  box-shadow: 0 12px 30px -5px hsl(var(--primary) / 0.3);
+  transform: translateY(-4px);
+}
+
+.house-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.3);
+}
+
+/* Grid de 2 colunas */
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+/* Form groups */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 0.5rem;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  background: rgba(15, 23, 42, 0.6);
+  color: hsl(var(--foreground));
+  border: 2px solid hsl(var(--border) / 0.5);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.form-input:focus,
+.form-select:focus {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 4px hsl(var(--primary) / 0.1);
+  background: rgba(15, 23, 42, 0.9);
+}
+
+/* Checkboxes customizados */
+.checkbox-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  transition: color 0.2s ease;
+  user-select: none;
+}
+
+.checkbox-group:hover {
+  color: hsl(var(--foreground));
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+  accent-color: hsl(var(--primary));
+  border-radius: 4px;
+}
+
+/* Botão toggle LAY/BACK */
+.btn-toggle {
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 8px;
+  border: 2px solid hsl(var(--border));
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 80px;
+}
+
+.btn-toggle:hover {
+  border-color: hsl(var(--primary));
+  color: hsl(var(--primary));
+}
+
+.btn-toggle.active {
+  background: linear-gradient(135deg, hsl(var(--shark-gradient-start)), hsl(var(--shark-gradient-end)));
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 4px 12px hsl(var(--primary) / 0.3);
+}
+
+/* Botões principais */
+.btn {
+  padding: 0.875rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, hsl(var(--shark-gradient-start)), hsl(var(--shark-gradient-end)));
+  color: white;
+  box-shadow: 0 4px 15px hsl(var(--primary) / 0.4);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px hsl(var(--primary) / 0.5);
+}
+
+.btn-secondary {
+  background: rgba(71, 85, 105, 0.4);
+  color: hsl(var(--foreground));
+  border: 2px solid hsl(var(--border));
+}
+
+.btn-secondary:hover {
+  background: rgba(71, 85, 105, 0.6);
+  border-color: hsl(var(--primary));
+  transform: translateY(-2px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+/* Tabela de resultados */
+.results-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid hsl(var(--border) / 0.5);
+}
+
+.results-table thead {
+  background: linear-gradient(135deg, hsl(var(--shark-gradient-start)), hsl(var(--shark-gradient-end)));
+}
+
+.results-table th {
+  padding: 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: white;
+}
+
+.results-table td {
+  padding: 1rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.3);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.results-table tbody tr {
+  background: rgba(15, 23, 42, 0.6);
+  transition: background 0.2s ease;
+}
+
+.results-table tbody tr:hover {
+  background: rgba(30, 41, 59, 0.8);
+}
+
+.results-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Card genérico */
+.card {
+  background: rgba(15, 23, 42, 0.5);
+  border: 2px solid hsl(var(--border) / 0.5);
+  border-radius: 16px;
+  padding: 2rem;
+  backdrop-filter: blur(10px);
+}
+
+/* Ações (botões) */
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+/* Campos condicionais */
+.commission-field,
+.increase-field,
+.responsibility-field {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .house-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+  
+  .stat-value {
+    font-size: 1.5rem;
+  }
+  
+  .results-table {
+    font-size: 0.75rem;
+  }
+  
+  .results-table th,
+  .results-table td {
+    padding: 0.75rem 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .actions {
+    flex-direction: column;
+  }
+  
+  .actions button {
+    width: 100%;
+  }
+}
