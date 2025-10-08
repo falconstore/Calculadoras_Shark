@@ -80,8 +80,12 @@ export class ArbiPro {
         const comm = gross > 0 ? (commission / 100) * gross : 0;
         profits[idx] = gross - comm;
       } else {
-        const effOdd = odd * (1 - commission / 100);
-        profits[idx] = stake * effOdd - totalStake;
+        // BACK normal: comissão é aplicada sobre o GANHO, não sobre o retorno total
+        const grossReturn = stake * odd; // Retorno bruto
+        const grossProfit = grossReturn - stake; // Ganho bruto (sem comissão)
+        const commissionAmount = grossProfit * (commission / 100); // Comissão sobre o ganho
+        const netReturn = grossReturn - commissionAmount; // Retorno líquido
+        profits[idx] = netReturn - totalStake; // Lucro final
       }
     });
 
@@ -123,19 +127,32 @@ export class ArbiPro {
       }
 
       if (idx !== fixedIndex && h.finalOdd > 0 && !overrides.stake) {
+        // Calcular o stake necessário para equilibrar os lucros
         const fixedCommission = fixed.commission || 0;
         const houseCommission = h.commission || 0;
-        const fixedProfit = fixedStake * fixedOdd * (1 - fixedCommission / 100);
+        
+        // Retorno da casa fixa após comissão
+        const fixedGrossReturn = fixedStake * fixedOdd;
+        const fixedGrossProfit = fixedGrossReturn - fixedStake;
+        const fixedCommAmount = fixedGrossProfit * (fixedCommission / 100);
+        const fixedNetReturn = fixedGrossReturn - fixedCommAmount;
         
         let calcStake;
+        
         if (h.lay) {
-          calcStake = fixedProfit / (h.finalOdd - houseCommission / 100);
+          // Para LAY o cálculo é diferente
+          calcStake = fixedNetReturn / (h.finalOdd - houseCommission / 100);
         } else {
-          const eff = h.finalOdd * (1 - houseCommission / 100);
-          calcStake = fixedProfit / eff;
+          // Para BACK: queremos que o retorno líquido desta casa = retorno líquido da casa fixa
+          // fixedNetReturn = stake * odd - stake * (odd - 1) * (commission/100)
+          // fixedNetReturn = stake * [odd - (odd - 1) * commission/100]
+          // fixedNetReturn = stake * [odd - odd*commission/100 + commission/100]
+          // fixedNetReturn = stake * [odd * (1 - commission/100) + commission/100]
+          const factor = h.finalOdd * (1 - houseCommission / 100) + (houseCommission / 100);
+          calcStake = fixedNetReturn / factor;
         }
         
-        let finalStakeStr = this.smartRoundStake(calcStake, fixedProfit, h.finalOdd, houseCommission);
+        let finalStakeStr = this.smartRoundStake(calcStake, fixedNetReturn, h.finalOdd, houseCommission);
         
         const finalStakeNum = Utils.parseFlex(finalStakeStr) || 0;
         const cur = Utils.parseFlex(h.stake) || 0;
@@ -442,6 +459,14 @@ export class ArbiPro {
 
     switch (action) {
       case "odd":
+        // Quando a odd é alterada, limpar o override de stake para recalcular automaticamente
+        if (this.manualOverrides[idx]) {
+          delete this.manualOverrides[idx].stake;
+          // Se não sobrou nenhum override, limpar o objeto todo
+          if (Object.keys(this.manualOverrides[idx]).length === 0) {
+            delete this.manualOverrides[idx];
+          }
+        }
         this.setHouse(idx, { odd: t.value });
         break;
       case "stake":
@@ -452,10 +477,24 @@ export class ArbiPro {
         break;
       case "commissionValue":
         const commVal = Utils.parseFlex(t.value);
+        // Limpar override de stake quando comissão é alterada
+        if (this.manualOverrides[idx]) {
+          delete this.manualOverrides[idx].stake;
+          if (Object.keys(this.manualOverrides[idx]).length === 0) {
+            delete this.manualOverrides[idx];
+          }
+        }
         this.setHouse(idx, { commission: Number.isFinite(commVal) ? commVal : 0 });
         break;
       case "increaseValue":
         const incVal = Utils.parseFlex(t.value);
+        // Limpar override de stake quando aumento de odd é alterado
+        if (this.manualOverrides[idx]) {
+          delete this.manualOverrides[idx].stake;
+          if (Object.keys(this.manualOverrides[idx]).length === 0) {
+            delete this.manualOverrides[idx];
+          }
+        }
         this.setHouse(idx, { increase: Number.isFinite(incVal) ? incVal : 0 });
         break;
     }
