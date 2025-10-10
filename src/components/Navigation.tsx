@@ -58,7 +58,7 @@ export const Navigation = () => {
               onClick={() => scrollToSection("casas")}
               className="hover:text-primary"
             >
-              Casas Regulamentadas
+              Ferramentas Extras
             </Button>
             <Button
               variant="ghost"
@@ -134,7 +134,7 @@ export const Navigation = () => {
               onClick={() => scrollToSection("casas")}
               className="w-full justify-start hover:text-primary"
             >
-              Casas Regulamentadas
+              Ferramentas Extras
             </Button>
             <Button
               variant="ghost"
