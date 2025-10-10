@@ -636,11 +636,12 @@ export class ArbiPro {
     
     const rowsHTML = active.map((h, idx) => {
       const oddOriginal = Utils.parseFlex(h.odd) || 0;
-      const oddText = oddOriginal.toFixed(2).replace('.', ',');
+      const oddText = h.odd ? String(h.odd).replace('.', ',') : oddOriginal.toFixed(2).replace('.', ',');
       const oddFinalText = hasOddIncrease ? 
-        `<td>${h.finalOdd ? h.finalOdd.toFixed(2).replace('.', ',') : oddText}</td>` : '';
+        `<td>${h.finalOdd ? String(h.finalOdd).replace('.', ',') : oddText}</td>` : '';
       const commissionText = (h.commission === null) ? '—' : (h.commission || 0).toFixed(2) + '%';
-      const stakeText = h.stake ? h.stake : "0,00";
+      const stakeValue = Utils.parseFlex(h.stake) || 0;
+      const stakeText = stakeValue.toFixed(2).replace('.', ',');
       const profit = this.results.profits[idx] || 0;
       const profitClass = profit >= 0 ? 'profit-positive' : 'profit-negative';
       const profitValue = Utils.formatBRL(profit);
