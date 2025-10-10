@@ -181,18 +181,18 @@ export const CalculatorFreeProDirect = () => {
     const resultsData = [
       {
         name: "1 vence (Casa Promo)",
-        odd: o1.toFixed(2),
+        odd: houseOdd || o1.toFixed(2),
         commission: (Number.isFinite(c1) ? c1 : 0).toFixed(2),
-        stake: formatBRL(s1),
+        stake: s1.toFixed(2),
         deficit: '-',
         liability: hasLay ? '-' : undefined,
         profit: formatBRL(profits[0])
       },
       ...validEntries.map((entry, idx) => ({
         name: `${idx + 2} vence`,
-        odd: oddsOrig[idx].toFixed(2),
+        odd: entry.odd || oddsOrig[idx].toFixed(2),
         commission: (Number.isFinite(toNum(entry.commission)) ? toNum(entry.commission) : 0).toFixed(2),
-        stake: formatBRL(roundedStakes[idx]) + (entry.isLay ? ' (LAY)' : ''),
+        stake: roundedStakes[idx].toFixed(2) + (entry.isLay ? ' (LAY)' : ''),
         deficit: formatBRL(defs[idx]),
         liability: hasLay ? (entry.isLay ? formatBRL(liabilities[idx]) : '-') : undefined,
         profit: formatBRL(profits[idx + 1])
@@ -347,18 +347,18 @@ export const CalculatorFreeProDirect = () => {
     const resultsData = [
       {
         name: "1 vence (Ganhou)",
-        odd: odd.toFixed(2),
+        odd: cashbackOdd || odd.toFixed(2),
         commission: (Number.isFinite(mainComm) ? mainComm : 0).toFixed(2),
-        stake: formatBRL(stake),
+        stake: stake.toFixed(2),
         deficit: '-',
         liability: hasLay ? '-' : undefined,
         profit: formatBRL(profits[0])
       },
       ...validEntries.map((entry, idx) => ({
         name: `${idx + 2} vence`,
-        odd: toNum(entry.odd).toFixed(2),
+        odd: entry.odd || toNum(entry.odd).toFixed(2),
         commission: (Number.isFinite(toNum(entry.commission)) ? toNum(entry.commission) : 0).toFixed(2),
-        stake: formatBRL(stakes[idx]) + (entry.isLay ? ' (LAY)' : ''),
+        stake: stakes[idx].toFixed(2) + (entry.isLay ? ' (LAY)' : ''),
         deficit: formatBRL(defs[idx]),
         liability: hasLay ? (entry.isLay ? formatBRL(liabilities[idx]) : '-') : undefined,
         profit: formatBRL(profits[idx + 1])
