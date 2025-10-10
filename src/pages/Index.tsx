@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 // Lazy load heavy components for better performance
 const CalculatorTabs = lazy(() => import("@/components/CalculatorTabs").then(m => ({ default: m.CalculatorTabs })));
-const CasasRegulamentadasWrapper = lazy(() => import("@/components/CasasRegulamentadasWrapper").then(m => ({ default: m.CasasRegulamentadasWrapper })));
+const HandicapTabs = lazy(() => import("@/components/HandicapTabs").then(m => ({ default: m.HandicapTabs })));
 const About = lazy(() => import("@/components/About").then(m => ({ default: m.About })));
 const Contact = lazy(() => import("@/components/Contact").then(m => ({ default: m.Contact })));
 
@@ -33,9 +33,9 @@ const Index = () => {
         <CalculatorTabs />
       </Suspense>
 
-      {/* Casas Regulamentadas */}
+      {/* Handicap e Casas Regulamentadas */}
       <Suspense fallback={<LoadingSection />}>
-        <CasasRegulamentadasWrapper />
+        <HandicapTabs />
       </Suspense>
       
       {/* Sobre e Contato */}
@@ -51,7 +51,7 @@ const Index = () => {
       <footer className="py-8 px-4 bg-muted/50 border-t border-border/50">
         <div className="container mx-auto text-center">
           <p className="text-muted-foreground">
-            © 2025 Shark Calculadoras - Ferramentas Profissionais de Apostas
+            © 2024 Shark Calculadoras - Ferramentas Profissionais de Apostas • Código Aberto
           </p>
         </div>
       </footer>
