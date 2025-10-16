@@ -181,18 +181,18 @@ export const CalculatorFreeProDirect = () => {
     const resultsData = [
       {
         name: "1 vence (Casa Promo)",
-        odd: houseOdd || o1.toFixed(2),
+        odd: houseOdd && houseOdd.trim() ? houseOdd.replace('.', ',') : o1.toFixed(2).replace('.', ','),
         commission: (Number.isFinite(c1) ? c1 : 0).toFixed(2),
-        stake: s1.toFixed(2),
+        stake: s1.toFixed(2).replace('.', ','),
         deficit: '-',
         liability: hasLay ? '-' : undefined,
         profit: formatBRL(profits[0])
       },
       ...validEntries.map((entry, idx) => ({
         name: `${idx + 2} vence`,
-        odd: entry.odd || oddsOrig[idx].toFixed(2),
+        odd: entry.odd && entry.odd.trim() ? entry.odd.replace('.', ',') : oddsOrig[idx].toFixed(2).replace('.', ','),
         commission: (Number.isFinite(toNum(entry.commission)) ? toNum(entry.commission) : 0).toFixed(2),
-        stake: roundedStakes[idx].toFixed(2) + (entry.isLay ? ' (LAY)' : ''),
+        stake: roundedStakes[idx].toFixed(2).replace('.', ',') + (entry.isLay ? ' (LAY)' : ''),
         deficit: formatBRL(defs[idx]),
         liability: hasLay ? (entry.isLay ? formatBRL(liabilities[idx]) : '-') : undefined,
         profit: formatBRL(profits[idx + 1])
@@ -347,18 +347,18 @@ export const CalculatorFreeProDirect = () => {
     const resultsData = [
       {
         name: "1 vence (Ganhou)",
-        odd: cashbackOdd || odd.toFixed(2),
+        odd: cashbackOdd && cashbackOdd.trim() ? cashbackOdd.replace('.', ',') : odd.toFixed(2).replace('.', ','),
         commission: (Number.isFinite(mainComm) ? mainComm : 0).toFixed(2),
-        stake: stake.toFixed(2),
+        stake: stake.toFixed(2).replace('.', ','),
         deficit: '-',
         liability: hasLay ? '-' : undefined,
         profit: formatBRL(profits[0])
       },
       ...validEntries.map((entry, idx) => ({
         name: `${idx + 2} vence`,
-        odd: entry.odd || toNum(entry.odd).toFixed(2),
+        odd: entry.odd && entry.odd.trim() ? entry.odd.replace('.', ',') : oddsOrig[idx].toFixed(2).replace('.', ','),
         commission: (Number.isFinite(toNum(entry.commission)) ? toNum(entry.commission) : 0).toFixed(2),
-        stake: stakes[idx].toFixed(2) + (entry.isLay ? ' (LAY)' : ''),
+        stake: stakes[idx].toFixed(2).replace('.', ',') + (entry.isLay ? ' (LAY)' : ''),
         deficit: formatBRL(defs[idx]),
         liability: hasLay ? (entry.isLay ? formatBRL(liabilities[idx]) : '-') : undefined,
         profit: formatBRL(profits[idx + 1])
