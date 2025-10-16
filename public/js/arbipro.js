@@ -640,7 +640,8 @@ export class ArbiPro {
       const oddText = h.odd && String(h.odd).trim() ? String(h.odd).replace('.', ',') : oddOriginal.toFixed(2).replace('.', ',');
       const oddFinalText = hasOddIncrease ? 
         `<td>${h.finalOdd > 0 ? h.finalOdd.toFixed(2).replace('.', ',') : oddText}</td>` : '';
-      const commissionText = (h.commission === null) ? '—' : (h.commission || 0).toFixed(2) + '%';
+      const commissionValue = Utils.parseFlex(h.commission);
+      const commissionText = (h.commission === null || h.commission === undefined) ? '—' : (Number.isFinite(commissionValue) ? commissionValue : 0).toFixed(2) + '%';
       const stakeValue = Utils.parseFlex(h.stake) || 0;
       // Stake sempre com 2 casas decimais
       const stakeText = stakeValue.toFixed(2).replace('.', ',');
