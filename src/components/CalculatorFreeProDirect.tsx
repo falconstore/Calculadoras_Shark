@@ -384,7 +384,7 @@ export const CalculatorFreeProDirect = () => {
     setEntries(newEntries);
   };
 
-  // Serializar estado para URL
+  // Serializar estado para URL - PRESERVAR VALORES EXATOS
   const serializeState = () => {
     const state: any = {
       mode,
@@ -393,24 +393,25 @@ export const CalculatorFreeProDirect = () => {
     };
 
     if (mode === 'freebet') {
-      if (houseOdd) state.ho = houseOdd;
-      if (houseCommission) state.hc = houseCommission;
-      if (qualifyingStake) state.qs = qualifyingStake;
-      if (freebetValue) state.fv = freebetValue;
-      if (extractionRate) state.er = extractionRate;
+      // CRÍTICO: Preservar valores exatos como strings
+      if (houseOdd) state.ho = String(houseOdd);
+      if (houseCommission) state.hc = String(houseCommission);
+      if (qualifyingStake) state.qs = String(qualifyingStake);
+      if (freebetValue) state.fv = String(freebetValue);
+      if (extractionRate) state.er = String(extractionRate);
     } else {
-      if (cashbackOdd) state.co = cashbackOdd;
-      if (cashbackCommission) state.cc = cashbackCommission;
-      if (cashbackStake) state.cs = cashbackStake;
-      if (cashbackRate) state.cr = cashbackRate;
+      if (cashbackOdd) state.co = String(cashbackOdd);
+      if (cashbackCommission) state.cc = String(cashbackCommission);
+      if (cashbackStake) state.cs = String(cashbackStake);
+      if (cashbackRate) state.cr = String(cashbackRate);
     }
 
-    // Adicionar entries com valores preenchidos
+    // Adicionar entries com valores preenchidos - PRESERVAR VALORES EXATOS
     const validEntries = entries.slice(0, numEntries - 1).filter(e => e.odd || e.commission);
     if (validEntries.length > 0) {
       state.entries = validEntries.map(e => ({
-        o: e.odd || '',
-        c: e.commission || '',
+        o: String(e.odd || ''),
+        c: String(e.commission || ''),
         l: e.isLay ? 1 : 0
       }));
     }
@@ -418,49 +419,60 @@ export const CalculatorFreeProDirect = () => {
     return state;
   };
 
-  // Deserializar URL para estado
+  // Deserializar URL para estado - PRESERVAR VALORES EXATOS
   const deserializeState = (params: URLSearchParams) => {
-    const mode = params.get('mode') as 'freebet' | 'cashback' || 'freebet';
-    setMode(mode);
+    try {
+      const mode = params.get('mode') as 'freebet' | 'cashback' || 'freebet';
+      setMode(mode);
 
-    const numEntries = parseInt(params.get('numEntries') || '3');
-    setNumEntries(numEntries);
+      const numEntries = parseInt(params.get('numEntries') || '3');
+      setNumEntries(numEntries);
 
-    const rounding = parseFloat(params.get('rounding') || '1.00');
-    setRounding(rounding);
+      const rounding = parseFloat(params.get('rounding') || '1.00');
+      setRounding(rounding);
 
-    if (mode === 'freebet') {
-      if (params.has('ho')) setHouseOdd(params.get('ho')!);
-      if (params.has('hc')) setHouseCommission(params.get('hc')!);
-      if (params.has('qs')) setQualifyingStake(params.get('qs')!);
-      if (params.has('fv')) setFreebetValue(params.get('fv')!);
-      if (params.has('er')) setExtractionRate(params.get('er')!);
-    } else {
-      if (params.has('co')) setCashbackOdd(params.get('co')!);
-      if (params.has('cc')) setCashbackCommission(params.get('cc')!);
-      if (params.has('cs')) setCashbackStake(params.get('cs')!);
-      if (params.has('cr')) setCashbackRate(params.get('cr')!);
-    }
-
-    // Restaurar entries
-    const entriesStr = params.get('entries');
-    if (entriesStr) {
-      try {
-        const entriesData = JSON.parse(entriesStr);
-        const newEntries = [...entries];
-        entriesData.forEach((e: any, idx: number) => {
-          if (idx < newEntries.length) {
-            newEntries[idx] = {
-              odd: e.o || '',
-              commission: e.c || '',
-              isLay: e.l === 1
-            };
-          }
-        });
-        setEntries(newEntries);
-      } catch (error) {
-        console.error('Erro ao restaurar entries:', error);
+      if (mode === 'freebet') {
+        // CRÍTICO: Restaurar valores exatos como strings
+        if (params.has('ho')) setHouseOdd(String(params.get('ho')!));
+        if (params.has('hc')) setHouseCommission(String(params.get('hc')!));
+        if (params.has('qs')) setQualifyingStake(String(params.get('qs')!));
+        if (params.has('fv')) setFreebetValue(String(params.get('fv')!));
+        if (params.has('er')) setExtractionRate(String(params.get('er')!));
+      } else {
+        if (params.has('co')) setCashbackOdd(String(params.get('co')!));
+        if (params.has('cc')) setCashbackCommission(String(params.get('cc')!));
+        if (params.has('cs')) setCashbackStake(String(params.get('cs')!));
+        if (params.has('cr')) setCashbackRate(String(params.get('cr')!));
       }
+
+      // Restaurar entries - PRESERVAR VALORES EXATOS
+      const entriesStr = params.get('entries');
+      if (entriesStr) {
+        try {
+          const entriesData = JSON.parse(entriesStr);
+          const newEntries = [...entries];
+          entriesData.forEach((e: any, idx: number) => {
+            if (idx < newEntries.length) {
+              newEntries[idx] = {
+                odd: String(e.o || ''),
+                commission: String(e.c || ''),
+                isLay: e.l === 1
+              };
+            }
+          });
+          setEntries(newEntries);
+          console.log('✅ Dados FreePro carregados da URL com precisão total');
+        } catch (error) {
+          console.error('❌ Erro ao restaurar entries:', error);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar dados da URL:', error);
+      toast({
+        title: "❌ Erro ao carregar",
+        description: "Erro ao carregar dados compartilhados.",
+        variant: "destructive"
+      });
     }
   };
 
