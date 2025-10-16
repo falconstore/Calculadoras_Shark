@@ -675,18 +675,19 @@ export class ArbiPro {
       h: []
     };
 
-    // Serializar casas com dados preenchidos
+    // Serializar casas com dados preenchidos - PRESERVAR VALORES EXATOS
     const active = this.activeHouses();
     active.forEach((house, idx) => {
       const h = {};
-      if (house.odd) h.o = house.odd;
-      if (house.stake && house.stake !== "0") h.s = house.stake;
-      if (house.commission !== null) h.c = house.commission;
-      if (house.increase !== null) h.i = house.increase;
+      // CRÍTICO: Preservar strings exatas dos inputs, não converter
+      if (house.odd) h.o = String(house.odd);
+      if (house.stake && house.stake !== "0") h.s = String(house.stake);
+      if (house.commission !== null) h.c = String(house.commission);
+      if (house.increase !== null) h.i = String(house.increase);
       if (house.freebet) h.f = 1;
       if (house.lay) h.l = 1;
       if (house.fixedStake) h.fs = 1;
-      if (house.responsibility) h.re = house.responsibility;
+      if (house.responsibility) h.re = String(house.responsibility);
       
       // Só adicionar se tiver algum dado
       if (Object.keys(h).length > 0) {
@@ -717,21 +718,22 @@ export class ArbiPro {
         if (select) select.value = this.displayRounding;
       }
 
-      // Restaurar casas
+      // Restaurar casas - PRESERVAR VALORES EXATOS
       if (params.has('h')) {
         const housesData = JSON.parse(params.get('h'));
         housesData.forEach((h, idx) => {
           if (idx >= this.MAX_HOUSES) return;
           
           const houseUpdate = {};
-          if (h.o) houseUpdate.odd = h.o;
-          if (h.s) houseUpdate.stake = h.s;
-          if (h.c !== undefined) houseUpdate.commission = h.c;
-          if (h.i !== undefined) houseUpdate.increase = h.i;
+          // CRÍTICO: Preservar como string, não converter
+          if (h.o !== undefined) houseUpdate.odd = String(h.o);
+          if (h.s !== undefined) houseUpdate.stake = String(h.s);
+          if (h.c !== undefined) houseUpdate.commission = String(h.c);
+          if (h.i !== undefined) houseUpdate.increase = String(h.i);
           if (h.f) houseUpdate.freebet = true;
           if (h.l) houseUpdate.lay = true;
           if (h.fs) houseUpdate.fixedStake = true;
-          if (h.re) houseUpdate.responsibility = h.re;
+          if (h.re !== undefined) houseUpdate.responsibility = String(h.re);
           
           // Usar setHouse para garantir que finalOdd seja calculado corretamente
           this.setHouse(idx, houseUpdate);
@@ -741,9 +743,10 @@ export class ArbiPro {
       // Renderizar e recalcular
       this.renderHouses();
       this.scheduleUpdate();
-      console.log('✅ Dados carregados da URL');
+      console.log('✅ Dados carregados da URL com precisão total');
     } catch (error) {
-      console.error('Erro ao carregar dados da URL:', error);
+      console.error('❌ Erro ao carregar dados da URL:', error);
+      alert('Erro ao carregar dados compartilhados. Verifique o link.');
     }
   }
 
