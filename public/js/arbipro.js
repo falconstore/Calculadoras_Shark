@@ -127,32 +127,40 @@ export class ArbiPro {
       }
 
       if (idx !== fixedIndex && h.finalOdd > 0 && !overrides.stake) {
-        // Calcular o stake necessário para equilibrar os lucros
-        const fixedCommission = fixed.commission || 0;
-        const houseCommission = h.commission || 0;
+        const fixedCommission = Utils.parseFlex(fixed.commission) || 0;
+        const houseCommission = Utils.parseFlex(h.commission) || 0;
         
-        // Retorno da casa fixa após comissão
-        const fixedGrossReturn = fixedStake * fixedOdd;
-        const fixedGrossProfit = fixedGrossReturn - fixedStake;
-        const fixedCommAmount = fixedGrossProfit * (fixedCommission / 100);
-        const fixedNetReturn = fixedGrossReturn - fixedCommAmount;
+        // Verificar se odds e comissões são iguais
+        const oddsIguais = Math.abs(fixed.finalOdd - h.finalOdd) < 0.01;
+        const commissoesIguais = Math.abs(fixedCommission - houseCommission) < 0.01;
+        const tiposIguais = !h.lay && !h.freebet && !fixed.lay && !fixed.freebet;
         
-        let calcStake;
+        let finalStakeStr;
         
-        if (h.lay) {
-          // Para LAY o cálculo é diferente
-          calcStake = fixedNetReturn / (h.finalOdd - houseCommission / 100);
+        // Se odds, comissões e tipos são iguais, copiar EXATAMENTE o stake fixado
+        if (oddsIguais && commissoesIguais && tiposIguais) {
+          finalStakeStr = fixed.stake; // Copia o valor exato como string
+          console.log(`Casa ${idx+1}: Odds iguais (${h.finalOdd} = ${fixed.finalOdd}), copiando stake: ${finalStakeStr}`);
         } else {
-          // Para BACK: queremos que o retorno líquido desta casa = retorno líquido da casa fixa
-          // fixedNetReturn = stake * odd - stake * (odd - 1) * (commission/100)
-          // fixedNetReturn = stake * [odd - (odd - 1) * commission/100]
-          // fixedNetReturn = stake * [odd - odd*commission/100 + commission/100]
-          // fixedNetReturn = stake * [odd * (1 - commission/100) + commission/100]
-          const factor = h.finalOdd * (1 - houseCommission / 100) + (houseCommission / 100);
-          calcStake = fixedNetReturn / factor;
+          // Calcular stake baseado na fórmula
+          let calcStake;
+          
+          if (h.lay) {
+            const fixedProfit = fixedStake * (fixed.finalOdd * (1 - fixedCommission / 100) - 1);
+            const factor = 2 - houseCommission / 100 - h.finalOdd;
+            calcStake = fixedProfit / factor;
+          } else if (h.freebet) {
+            const fixedReturn = fixedStake * fixed.finalOdd * (1 - fixedCommission / 100);
+            calcStake = fixedReturn / (h.finalOdd * (1 - houseCommission / 100));
+          } else {
+            // BACK normal
+            const fixedNetOdd = fixed.finalOdd - (fixed.finalOdd - 1) * (fixedCommission / 100);
+            const houseNetOdd = h.finalOdd - (h.finalOdd - 1) * (houseCommission / 100);
+            calcStake = (fixedStake * fixedNetOdd) / houseNetOdd;
+          }
+          
+          finalStakeStr = this.smartRoundStake(calcStake, fixedStake * fixed.finalOdd, h.finalOdd, houseCommission);
         }
-        
-        let finalStakeStr = this.smartRoundStake(calcStake, fixedNetReturn, h.finalOdd, houseCommission);
         
         const finalStakeNum = Utils.parseFlex(finalStakeStr) || 0;
         const cur = Utils.parseFlex(h.stake) || 0;
@@ -188,34 +196,32 @@ export class ArbiPro {
     if (!Number.isFinite(num)) return Utils.formatDecimal(num);
     
     const step = this.roundingValue;
-    const baseRounded = Math.round(num / step) * step;
     
-    const options = [
-      Math.max(0, baseRounded - step),
-      baseRounded,
-      baseRounded + step
-    ];
+    console.log(`Arredondamento: valor=${num}, step=${step}`);
     
-    let bestOption = baseRounded;
-    let bestScore = -Infinity;
+    // Calcular o piso (arredondamento para baixo)
+    const floor = Math.floor(num / step) * step;
+    // Calcular quanto falta para completar o próximo step
+    const remainder = num - floor;
     
-    options.forEach(option => {
-      if (option <= 0) return;
-      
-      const effOdd = odd * (1 - commission / 100);
-      const profit = option * effOdd - targetProfit;
-      
-      let score = profit;
-      if (profit > 0) score += 100;
-      score -= Math.abs(option - num) * 10;
-      
-      if (score > bestScore) {
-        bestScore = score;
-        bestOption = option;
-      }
-    });
+    console.log(`floor=${floor}, remainder=${remainder}, metade do step=${step * 0.5}`);
     
-    return Utils.formatDecimal(bestOption);
+    let rounded;
+    
+    // Se o resto for <= 50% do step, arredondar para baixo
+    // Se o resto for > 50% do step, arredondar para cima
+    if (remainder <= step * 0.5) {
+      rounded = floor;
+      console.log(`Arredondando para BAIXO: ${rounded}`);
+    } else {
+      rounded = floor + step;
+      console.log(`Arredondando para CIMA: ${rounded}`);
+    }
+    
+    // Garantir que não seja negativo
+    rounded = Math.max(0, rounded);
+    
+    return Utils.formatDecimal(rounded);
   }
 
   // Interface
