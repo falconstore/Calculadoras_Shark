@@ -1,7 +1,7 @@
 // assets/js/calculators/arbipro.js - VERSÃO COMPLETA ATUALIZADA
 // Calculadora de Arbitragem completa
 
-// Usa variáveis globais window.Utils e window.APP_CONFIG
+// Usa variáveis globais window.Utils 
 const Utils = window.Utils;
 const APP_CONFIG = window.APP_CONFIG;
 
