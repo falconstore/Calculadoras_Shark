@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { Link, Trash2, Loader2 } from "lucide-react";
+import sharkWatermark from "@/assets/shark-watermark.png";
 
 interface FreebetEntry {
   odd: string;
@@ -14,6 +15,13 @@ export const CalculatorFreeProDirect = () => {
   const [rounding, setRounding] = useState(1.00);
   const [isSharing, setIsSharing] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  
+  // Nomes editáveis para os cards
+  const [houseNames, setHouseNames] = useState<string[]>([
+    "Casa Promo",
+    ...Array(5).fill(null).map((_, i) => `Casa ${i + 2}`)
+  ]);
+  const [editingName, setEditingName] = useState<number | null>(null);
   
   // Freebet fields
   const [houseOdd, setHouseOdd] = useState("");
@@ -180,7 +188,7 @@ export const CalculatorFreeProDirect = () => {
     
     const resultsData = [
       {
-        name: "1 vence (Casa Promo)",
+        name: `1 vence (${houseNames[0]})`,
         odd: houseOdd && houseOdd.trim() ? houseOdd.replace('.', ',') : o1.toFixed(2).replace('.', ','),
         commission: (Number.isFinite(c1) ? c1 : 0).toFixed(2),
         stake: s1.toFixed(2).replace('.', ','),
@@ -189,7 +197,7 @@ export const CalculatorFreeProDirect = () => {
         profit: formatBRL(profits[0])
       },
       ...validEntries.map((entry, idx) => ({
-        name: `${idx + 2} vence`,
+        name: `${idx + 2} vence (${houseNames[idx + 1]})`,
         odd: entry.odd && entry.odd.trim() ? entry.odd.replace('.', ',') : oddsOrig[idx].toFixed(2).replace('.', ','),
         commission: (Number.isFinite(toNum(entry.commission)) ? toNum(entry.commission) : 0).toFixed(2),
         stake: roundedStakes[idx].toFixed(2).replace('.', ',') + (entry.isLay ? ' (LAY)' : ''),
@@ -346,7 +354,7 @@ export const CalculatorFreeProDirect = () => {
     
     const resultsData = [
       {
-        name: "1 vence (Ganhou)",
+        name: `1 vence (${houseNames[0]})`,
         odd: cashbackOdd && cashbackOdd.trim() ? cashbackOdd.replace('.', ',') : odd.toFixed(2).replace('.', ','),
         commission: (Number.isFinite(mainComm) ? mainComm : 0).toFixed(2),
         stake: stake.toFixed(2).replace('.', ','),
@@ -355,7 +363,7 @@ export const CalculatorFreeProDirect = () => {
         profit: formatBRL(profits[0])
       },
       ...validEntries.map((entry, idx) => ({
-        name: `${idx + 2} vence`,
+        name: `${idx + 2} vence (${houseNames[idx + 1]})`,
         odd: entry.odd && entry.odd.trim() ? entry.odd.replace('.', ',') : oddsOrig[idx].toFixed(2).replace('.', ','),
         commission: (Number.isFinite(toNum(entry.commission)) ? toNum(entry.commission) : 0).toFixed(2),
         stake: stakes[idx].toFixed(2).replace('.', ',') + (entry.isLay ? ' (LAY)' : ''),
@@ -522,6 +530,13 @@ export const CalculatorFreeProDirect = () => {
     setNumEntries(3);
     setRounding(1.00);
     
+    // Reset nomes
+    setHouseNames([
+      "Casa Promo",
+      ...Array(5).fill(null).map((_, i) => `Casa ${i + 2}`)
+    ]);
+    setEditingName(null);
+    
     // Reset campos Freebet
     setHouseOdd("");
     setHouseCommission("");
@@ -636,7 +651,33 @@ export const CalculatorFreeProDirect = () => {
       {/* Casa Promoção */}
       {mode === 'freebet' && (
         <div className="card mb-6">
-          <div className="section-title">Casa Promoção (Freebet)</div>
+          {editingName === 0 ? (
+            <input
+              type="text"
+              value={houseNames[0]}
+              onChange={(e) => {
+                const newNames = [...houseNames];
+                newNames[0] = e.target.value;
+                setHouseNames(newNames);
+              }}
+              onBlur={() => setEditingName(null)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setEditingName(null);
+                }
+              }}
+              autoFocus
+              className="section-title bg-transparent border-b-2 border-[hsl(var(--shark-gradient-start))] outline-none w-full mb-4"
+            />
+          ) : (
+            <div 
+              className="section-title cursor-pointer hover:opacity-80 transition-opacity mb-4"
+              onClick={() => setEditingName(0)}
+              title="Clique para editar o nome"
+            >
+              {houseNames[0]} (Freebet)
+            </div>
+          )}
           
           <div className="grid-2 mb-4">
             <div className="form-group">
@@ -700,7 +741,33 @@ export const CalculatorFreeProDirect = () => {
       {/* Casa Promoção - Cashback */}
       {mode === 'cashback' && (
         <div className="card mb-6">
-          <div className="section-title">Casa Promoção (Cashback)</div>
+          {editingName === 0 ? (
+            <input
+              type="text"
+              value={houseNames[0]}
+              onChange={(e) => {
+                const newNames = [...houseNames];
+                newNames[0] = e.target.value;
+                setHouseNames(newNames);
+              }}
+              onBlur={() => setEditingName(null)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setEditingName(null);
+                }
+              }}
+              autoFocus
+              className="section-title bg-transparent border-b-2 border-[hsl(var(--shark-gradient-start))] outline-none w-full mb-4"
+            />
+          ) : (
+            <div 
+              className="section-title cursor-pointer hover:opacity-80 transition-opacity mb-4"
+              onClick={() => setEditingName(0)}
+              title="Clique para editar o nome"
+            >
+              {houseNames[0]} (Cashback)
+            </div>
+          )}
           
           <div className="grid-2 mb-4">
             <div className="form-group">
@@ -756,7 +823,33 @@ export const CalculatorFreeProDirect = () => {
         <div className="house-grid">
           {entries.slice(0, numEntries - 1).map((entry, idx) => (
             <div key={idx} className="house-card">
-              <h3 className="house-title">Resultado {idx + 2}</h3>
+              {editingName === idx + 1 ? (
+                <input
+                  type="text"
+                  value={houseNames[idx + 1]}
+                  onChange={(e) => {
+                    const newNames = [...houseNames];
+                    newNames[idx + 1] = e.target.value;
+                    setHouseNames(newNames);
+                  }}
+                  onBlur={() => setEditingName(null)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setEditingName(null);
+                    }
+                  }}
+                  autoFocus
+                  className="house-title bg-transparent border-b-2 border-[hsl(var(--shark-gradient-start))] outline-none w-full mb-4"
+                />
+              ) : (
+                <h3 
+                  className="house-title cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => setEditingName(idx + 1)}
+                  title="Clique para editar o nome"
+                >
+                  {houseNames[idx + 1]}
+                </h3>
+              )}
               
               <div className="grid-2 mb-4">
                 <div className="form-group">
@@ -836,8 +929,21 @@ export const CalculatorFreeProDirect = () => {
 
       {/* Resultados */}
       {results.length > 0 && (
-        <div className="card">
-          <div className="section-title">Resultados Shark FreePro</div>
+        <div className="card relative">
+          {/* Marca d'água */}
+          <div 
+            className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden"
+            style={{ zIndex: 1 }}
+          >
+            <img 
+              src={sharkWatermark} 
+              alt="Shark Watermark" 
+              className="opacity-[0.15] max-w-[70%] max-h-[70%] object-contain"
+            />
+          </div>
+          
+          <div className="relative" style={{ zIndex: 2 }}>
+            <div className="section-title">Resultados Shark FreePro</div>
           
           <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
             <div className="stat-card">
@@ -898,6 +1004,7 @@ export const CalculatorFreeProDirect = () => {
                 ))}
               </tbody>
             </table>
+          </div>
           </div>
         </div>
       )}
