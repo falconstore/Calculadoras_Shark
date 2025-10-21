@@ -1,6 +1,5 @@
 import { Calculator, TrendingUp, Shield } from "lucide-react";
 import { Button } from "./ui/button";
-import sharkWatermark from "@/assets/shark-watermark.png";
 
 export const Hero = () => {
   const scrollToCalculators = () => {
@@ -33,43 +32,29 @@ export const Hero = () => {
           </p>
 
           {/* Features */}
-          <div className="relative">
-            {/* Marca d'água */}
-            <div 
-              className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden"
-              style={{ zIndex: 0 }}
-            >
-              <img 
-                src={sharkWatermark} 
-                alt="Shark Watermark" 
-                className="opacity-[0.15] max-w-[50%] max-h-[50%] object-contain"
-              />
+          <div className="grid md:grid-cols-3 gap-6 py-8">
+            <div className="glass-card p-6 rounded-xl glow-hover">
+              <Calculator className="w-12 h-12 text-primary mx-auto mb-4" />
+              <h3 className="text-lg font-bold mb-2">Calculadoras Avançadas</h3>
+              <p className="text-sm text-muted-foreground">
+                ArbiPro e FreePro para cálculos precisos
+              </p>
             </div>
-            
-            <div className="grid md:grid-cols-3 gap-6 py-8 relative" style={{ zIndex: 1 }}>
-              <div className="glass-card p-6 rounded-xl glow-hover">
-                <Calculator className="w-12 h-12 text-primary mx-auto mb-4" />
-                <h3 className="text-lg font-bold mb-2">Calculadoras Avançadas</h3>
-                <p className="text-sm text-muted-foreground">
-                  ArbiPro e FreePro para cálculos precisos
-                </p>
-              </div>
 
-              <div className="glass-card p-6 rounded-xl glow-hover">
-                <TrendingUp className="w-12 h-12 text-secondary mx-auto mb-4" />
-                <h3 className="text-lg font-bold mb-2">ROI Otimizado</h3>
-                <p className="text-sm text-muted-foreground">
-                  Maximize seus lucros com estratégias comprovadas
-                </p>
-              </div>
+            <div className="glass-card p-6 rounded-xl glow-hover">
+              <TrendingUp className="w-12 h-12 text-secondary mx-auto mb-4" />
+              <h3 className="text-lg font-bold mb-2">ROI Otimizado</h3>
+              <p className="text-sm text-muted-foreground">
+                Maximize seus lucros com estratégias comprovadas
+              </p>
+            </div>
 
-              <div className="glass-card p-6 rounded-xl glow-hover">
-                <Shield className="w-12 h-12 text-accent mx-auto mb-4" />
-                <h3 className="text-lg font-bold mb-2">Casas Regulamentadas</h3>
-                <p className="text-sm text-muted-foreground">
-                  Apenas plataformas verificadas e seguras
-                </p>
-              </div>
+            <div className="glass-card p-6 rounded-xl glow-hover">
+              <Shield className="w-12 h-12 text-accent mx-auto mb-4" />
+              <h3 className="text-lg font-bold mb-2">Casas Regulamentadas</h3>
+              <p className="text-sm text-muted-foreground">
+                Apenas plataformas verificadas e seguras
+              </p>
             </div>
           </div>
 
