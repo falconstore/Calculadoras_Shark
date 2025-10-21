@@ -1,7 +1,7 @@
 // assets/js/calculators/arbipro.js - VERSÃO COMPLETA ATUALIZADA
 // Calculadora de Arbitragem completa
 
-// Usa variáveis globais window.Utils 
+// Usa variáveis globais window.Utils e window.APP_CONFIG
 const Utils = window.Utils;
 const APP_CONFIG = window.APP_CONFIG;
 
@@ -23,7 +23,8 @@ export class ArbiPro {
       freebet: false,
       fixedStake: index === 0,
       lay: false,
-      responsibility: ""
+      responsibility: "",
+      name: ""
     }));
 
     this.results = { profits: [], totalStake: 0, roi: 0 };
@@ -292,9 +293,10 @@ export class ArbiPro {
 
   cardHTML(idx, h) {
     const oddDisplay = (h.finalOdd || 0).toFixed(2).replace('.', ',');
+    const houseName = h.name || `Casa ${idx + 1}`;
     return `
       <div id="card-${idx}" class="house-card">
-        <h3 class="house-title">Casa ${idx + 1}</h3>
+        <h3 class="house-title" contenteditable="true" data-idx="${idx}" data-action="editHouseName" spellcheck="false">${houseName}</h3>
         <div class="grid-2" style="margin-bottom: 0.75rem;">
           <div class="form-group">
             <label class="form-label" for="odd-${idx}">Odd</label>
@@ -420,6 +422,17 @@ export class ArbiPro {
     container.addEventListener("input", (e) => this.handleInput(e));
     container.addEventListener("change", (e) => this.handleChange(e));
     container.addEventListener("click", (e) => this.handleClick(e));
+    container.addEventListener("keydown", (e) => this.handleKeyDown(e));
+  }
+
+  handleKeyDown(e) {
+    const t = e.target;
+    const action = t.getAttribute("data-action");
+    
+    if (action === "editHouseName" && e.key === "Enter") {
+      e.preventDefault();
+      t.blur();
+    }
   }
 
   handleInput(e) {
@@ -434,6 +447,9 @@ export class ArbiPro {
     if (!action || idx < 0) return;
 
     switch (action) {
+      case "editHouseName":
+        this.setHouse(idx, { name: t.textContent.trim() });
+        break;
       case "odd":
         // Quando a odd é alterada, limpar o override de stake para recalcular automaticamente
         if (this.manualOverrides[idx]) {
@@ -626,10 +642,11 @@ export class ArbiPro {
       const profitValue = Utils.formatBRL(profit);
       const responsibilityCell = hasLayBets ? 
         `<td>${h.lay ? '<strong>R$ ' + (h.responsibility || '0,00') + '</strong>' : '—'}</td>` : '';
+      const houseName = h.name || `Casa ${idx + 1}`;
       
       return `
         <tr>
-          <td><strong>Casa ${idx + 1}</strong></td>
+          <td><strong>${houseName}</strong></td>
           <td>${oddText}</td>
           ${oddFinalText}
           <td>${commissionText}</td>
@@ -667,6 +684,7 @@ export class ArbiPro {
       if (house.lay) h.l = 1;
       if (house.fixedStake) h.fs = 1;
       if (house.responsibility) h.re = String(house.responsibility);
+      if (house.name) h.n = house.name;
       
       // Só adicionar se tiver algum dado
       if (Object.keys(h).length > 0) {
@@ -713,6 +731,7 @@ export class ArbiPro {
           if (h.l) houseUpdate.lay = true;
           if (h.fs) houseUpdate.fixedStake = true;
           if (h.re !== undefined) houseUpdate.responsibility = String(h.re);
+          if (h.n !== undefined) houseUpdate.name = h.n;
           
           // Usar setHouse para garantir que finalOdd seja calculado corretamente
           this.setHouse(idx, houseUpdate);
