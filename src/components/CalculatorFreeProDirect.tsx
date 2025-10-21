@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { Link, Trash2, Loader2 } from "lucide-react";
-import sharkWatermark from "@/assets/shark-watermark.png";
 
 interface FreebetEntry {
   odd: string;
@@ -929,21 +928,8 @@ export const CalculatorFreeProDirect = () => {
 
       {/* Resultados */}
       {results.length > 0 && (
-        <div className="card relative">
-          {/* Marca d'água */}
-          <div 
-            className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden"
-            style={{ zIndex: 1 }}
-          >
-            <img 
-              src={sharkWatermark} 
-              alt="Shark Watermark" 
-              className="opacity-[0.15] max-w-[70%] max-h-[70%] object-contain"
-            />
-          </div>
-          
-          <div className="relative" style={{ zIndex: 2 }}>
-            <div className="section-title">Resultados Shark FreePro</div>
+        <div className="card">
+          <div className="section-title">Resultados Shark FreePro</div>
           
           <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
             <div className="stat-card">
@@ -1004,7 +990,6 @@ export const CalculatorFreeProDirect = () => {
                 ))}
               </tbody>
             </table>
-          </div>
           </div>
         </div>
       )}

@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 export const BetbraPromo = () => {
   const handleClick = () => {
     // Link de indicação será adicionado aqui
-    window.open("https://betbra.bet.br/register/?affid=shark100", "_blank");
+    window.open("SEU_LINK_DE_INDICACAO_AQUI", "_blank");
   };
 
   return (
