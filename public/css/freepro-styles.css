@@ -64,6 +64,34 @@
   overflow: hidden !important;
 }
 
+/* Marca d'água para card de resultados */
+.card.card-with-watermark {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.card.card-with-watermark::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 80% !important;
+  height: 80% !important;
+  background-image: url('/images/shark-logo-watermark.png') !important;
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  opacity: 0.15 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+}
+
+.card.card-with-watermark > * {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
 .card::before {
   content: '' !important;
   position: absolute !important;

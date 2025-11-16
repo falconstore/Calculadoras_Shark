@@ -238,7 +238,7 @@ export class ArbiPro {
         <div id="houses" class="house-grid"></div>
       </div>
 
-      <div class="card" style="margin-top: 1.5rem;">
+      <div class="card card-with-watermark" style="margin-top: 1.5rem;">
         <div class="section-title">Resultados Shark ArbiPro</div>
         
         <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
