@@ -928,7 +928,7 @@ export const CalculatorFreeProDirect = () => {
 
       {/* Resultados */}
       {results.length > 0 && (
-        <div className="card">
+        <div className="card card-with-watermark">
           <div className="section-title">Resultados Shark FreePro</div>
           
           <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
