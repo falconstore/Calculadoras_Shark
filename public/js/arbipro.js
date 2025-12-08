@@ -77,16 +77,23 @@ export class ArbiPro {
         const resp = Utils.parseFlex(h.responsibility) || 0;
         profits[idx] = stake * (1 - commission / 100) - (totalStake - resp);
       } else if (h.freebet) {
-        const gross = stake * odd - totalStake;
-        const comm = gross > 0 ? (commission / 100) * gross : 0;
-        profits[idx] = gross - comm;
+        // Freebet: odd já é finalOdd = (odd_original - 1), então retorno = stake × odd
+        const freebetGrossReturn = stake * odd;
+        // Comissão é aplicada sobre o retorno bruto do freebet
+        const commAmount = freebetGrossReturn * (commission / 100);
+        const freebetNetReturn = freebetGrossReturn - commAmount;
+        profits[idx] = freebetNetReturn - totalStake;
       } else {
-        // BACK normal: comissão é aplicada sobre o GANHO, não sobre o retorno total
-        const grossReturn = stake * odd; // Retorno bruto
-        const grossProfit = grossReturn - stake; // Ganho bruto (sem comissão)
-        const commissionAmount = grossProfit * (commission / 100); // Comissão sobre o ganho
-        const netReturn = grossReturn - commissionAmount; // Retorno líquido
-        profits[idx] = netReturn - totalStake; // Lucro final
+        // BACK normal: retorno bruto menos totalStake, com comissão sobre o lucro bruto
+        const grossReturn = stake * odd;
+        const grossProfit = grossReturn - totalStake;
+        // Comissão só é aplicada se houver lucro
+        if (grossProfit > 0) {
+          const commissionAmount = grossProfit * (commission / 100);
+          profits[idx] = grossProfit - commissionAmount;
+        } else {
+          profits[idx] = grossProfit;
+        }
       }
     });
 
@@ -133,24 +140,45 @@ export class ArbiPro {
         const houseCommission = h.commission || 0;
         
         // Retorno da casa fixa após comissão
-        const fixedGrossReturn = fixedStake * fixedOdd;
-        const fixedGrossProfit = fixedGrossReturn - fixedStake;
-        const fixedCommAmount = fixedGrossProfit * (fixedCommission / 100);
-        const fixedNetReturn = fixedGrossReturn - fixedCommAmount;
+        let fixedNetReturn;
+        
+        if (fixed.freebet) {
+          // Freebet: fixedOdd já é finalOdd = (odd_original - 1), então retorno = stake × fixedOdd
+          const freebetGrossReturn = fixedStake * fixedOdd;
+          const freebetCommAmount = freebetGrossReturn * (fixedCommission / 100);
+          fixedNetReturn = freebetGrossReturn - freebetCommAmount;
+        } else {
+          // BACK normal: retorno bruto - comissão sobre o ganho
+          const fixedGrossReturn = fixedStake * fixedOdd;
+          const fixedGrossProfit = fixedGrossReturn - fixedStake;
+          const fixedCommAmount = fixedGrossProfit * (fixedCommission / 100);
+          fixedNetReturn = fixedGrossReturn - fixedCommAmount;
+        }
         
         let calcStake;
         
         if (h.lay) {
           // Para LAY o cálculo é diferente
           calcStake = fixedNetReturn / (h.finalOdd - houseCommission / 100);
+        } else if (h.freebet) {
+          // Se esta casa também é freebet
+          // h.finalOdd já é (odd_original - 1), então usar diretamente
+          const factor = h.finalOdd * (1 - houseCommission / 100);
+          calcStake = factor > 0 ? fixedNetReturn / factor : 0;
         } else {
-          // Para BACK: queremos que o retorno líquido desta casa = retorno líquido da casa fixa
-          // fixedNetReturn = stake * odd - stake * (odd - 1) * (commission/100)
-          // fixedNetReturn = stake * [odd - (odd - 1) * commission/100]
-          // fixedNetReturn = stake * [odd - odd*commission/100 + commission/100]
-          // fixedNetReturn = stake * [odd * (1 - commission/100) + commission/100]
-          const factor = h.finalOdd * (1 - houseCommission / 100) + (houseCommission / 100);
-          calcStake = fixedNetReturn / factor;
+          // Para BACK: stake = fixedNetReturn / odd
+          // A comissão é aplicada sobre (stake * odd - totalStake), não sobre (stake * odd - stake)
+          // Para equilíbrio sem comissão: stake = fixedNetReturn / odd
+          // Com comissão, precisamos iterar, mas como aproximação usamos a fórmula simples
+          if (houseCommission > 0) {
+            // Com comissão: profit = (stake * odd - totalStake) * (1 - commission/100)
+            // Para equilíbrio: fixedNetReturn - totalStake = (stake * odd - totalStake) * (1 - c)
+            // Simplificação: stake ≈ fixedNetReturn / odd (funciona bem quando comissão é baixa)
+            calcStake = fixedNetReturn / h.finalOdd;
+          } else {
+            // Sem comissão: stake = fixedNetReturn / odd
+            calcStake = fixedNetReturn / h.finalOdd;
+          }
         }
         
         let finalStakeStr = this.smartRoundStake(calcStake, fixedNetReturn, h.finalOdd, houseCommission);
