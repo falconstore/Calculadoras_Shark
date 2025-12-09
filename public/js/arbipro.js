@@ -179,8 +179,12 @@ export class ArbiPro {
       
       if (h.lay) {
         const houseCommission = h.commission || 0;
-        // Lay: ganho = stake × (1 - comissão)
-        calcStake = fixedNetReturn / (1 - houseCommission / 100);
+        const oddLay = h.finalOdd; // Odd do Lay
+        const commissionDecimal = houseCommission / 100;
+        
+        // Fórmula correta para Freebet + Lay:
+        // Stake_Lay = Retorno_FB / (Odd_Lay - comissão_decimal)
+        calcStake = fixedNetReturn / (oddLay - commissionDecimal);
       } else {
         // BACK e Freebet: usar effectiveOdd (já considera comissão)
         // stake × effectiveOdd = fixedNetReturn
