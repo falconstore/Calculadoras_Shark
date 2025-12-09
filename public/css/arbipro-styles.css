@@ -1,4 +1,5 @@
-/* === ESTILOS MODERNOS ARBIPRO === */
+/* === ESTILOS UNIFICADOS ARBIPRO === */
+/* Integrado com o sistema de design React/Tailwind */
 
 /* Header da calculadora */
 .calc-header {
@@ -15,13 +16,13 @@
 }
 
 .stat-card {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.6));
-  border: 2px solid hsl(var(--border) / 0.3);
+  background: hsl(var(--card) / 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border) / 0.5);
   border-radius: 12px;
   padding: 1.5rem;
   text-align: center;
   transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
 }
 
 .stat-card:hover {
@@ -72,6 +73,7 @@
   background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* Cards das casas */
@@ -83,11 +85,11 @@
 }
 
 .house-card {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.7));
-  border: 2px solid hsl(var(--border) / 0.5);
-  border-radius: 16px;
+  background: hsl(var(--card) / 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border) / 0.5);
+  border-radius: 0.75rem;
   padding: 1.5rem;
-  backdrop-filter: blur(10px);
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
@@ -99,7 +101,7 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
+  height: 3px;
   background: linear-gradient(90deg, hsl(var(--shark-gradient-start)), hsl(var(--shark-gradient-end)));
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -111,8 +113,8 @@
 
 .house-card:hover {
   border-color: hsl(var(--primary) / 0.8);
-  box-shadow: 0 12px 30px -5px hsl(var(--primary) / 0.3);
-  transform: translateY(-4px);
+  box-shadow: 0 0 30px hsl(var(--glow) / 0.4);
+  transform: translateY(-2px);
 }
 
 .house-title {
@@ -149,10 +151,10 @@
 .form-input,
 .form-select {
   width: 100%;
-  background: rgba(15, 23, 42, 0.6);
+  background: hsl(var(--background));
   color: hsl(var(--foreground));
-  border: 2px solid hsl(var(--border) / 0.5);
-  border-radius: 8px;
+  border: 2px solid hsl(var(--border));
+  border-radius: 0.5rem;
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
   font-weight: 500;
@@ -164,7 +166,10 @@
 .form-select:focus {
   border-color: hsl(var(--primary));
   box-shadow: 0 0 0 4px hsl(var(--primary) / 0.1);
-  background: rgba(15, 23, 42, 0.9);
+}
+
+.form-input::placeholder {
+  color: hsl(var(--muted-foreground));
 }
 
 /* Checkboxes customizados */
@@ -199,7 +204,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-radius: 8px;
+  border-radius: 0.5rem;
   border: 2px solid hsl(var(--border));
   background: transparent;
   color: hsl(var(--muted-foreground));
@@ -216,7 +221,7 @@
 .btn-toggle.active {
   background: linear-gradient(135deg, hsl(var(--shark-gradient-start)), hsl(var(--shark-gradient-end)));
   border-color: transparent;
-  color: white;
+  color: hsl(var(--primary-foreground));
   box-shadow: 0 4px 12px hsl(var(--primary) / 0.3);
 }
 
@@ -227,7 +232,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-radius: 10px;
+  border-radius: 0.5rem;
   border: none;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -237,23 +242,23 @@
 
 .btn-primary {
   background: linear-gradient(135deg, hsl(var(--shark-gradient-start)), hsl(var(--shark-gradient-end)));
-  color: white;
+  color: hsl(var(--primary-foreground));
   box-shadow: 0 4px 15px hsl(var(--primary) / 0.4);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px hsl(var(--primary) / 0.5);
+  box-shadow: 0 0 30px hsl(var(--glow) / 0.4);
 }
 
 .btn-secondary {
-  background: rgba(71, 85, 105, 0.4);
+  background: hsl(var(--muted));
   color: hsl(var(--foreground));
   border: 2px solid hsl(var(--border));
 }
 
 .btn-secondary:hover {
-  background: rgba(71, 85, 105, 0.6);
+  background: hsl(var(--muted) / 0.8);
   border-color: hsl(var(--primary));
   transform: translateY(-2px);
 }
@@ -267,9 +272,9 @@
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  border-radius: 12px;
+  border-radius: 0.75rem;
   overflow: hidden;
-  border: 2px solid hsl(var(--border) / 0.5);
+  border: 1px solid hsl(var(--border) / 0.5);
 }
 
 .results-table thead {
@@ -283,7 +288,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: white;
+  color: hsl(var(--primary-foreground));
 }
 
 .results-table td {
@@ -291,15 +296,16 @@
   border-bottom: 1px solid hsl(var(--border) / 0.3);
   font-size: 0.875rem;
   font-weight: 500;
+  color: hsl(var(--foreground));
 }
 
 .results-table tbody tr {
-  background: rgba(15, 23, 42, 0.6);
+  background: hsl(var(--card) / 0.6);
   transition: background 0.2s ease;
 }
 
 .results-table tbody tr:hover {
-  background: rgba(30, 41, 59, 0.8);
+  background: hsl(var(--card) / 0.9);
 }
 
 .results-table tbody tr:last-child td {
@@ -308,17 +314,24 @@
 
 /* Card genérico */
 .card {
-  background: rgba(15, 23, 42, 0.5);
-  border: 2px solid hsl(var(--border) / 0.5);
-  border-radius: 16px;
+  background: hsl(var(--card) / 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border) / 0.5);
+  border-radius: 0.75rem;
   padding: 2rem;
-  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
 }
 
 /* Marca d'água para card de resultados */
 .card.card-with-watermark {
   position: relative !important;
   overflow: hidden !important;
+}
+
+.card.card-with-watermark:hover {
+  border-color: hsl(var(--primary) / 0.8);
+  box-shadow: 0 0 30px hsl(var(--glow) / 0.5), 0 0 60px hsl(var(--primary) / 0.2);
+  transform: translateY(-2px);
 }
 
 .card.card-with-watermark::before {
@@ -336,6 +349,11 @@
   opacity: 0.15 !important;
   z-index: 0 !important;
   pointer-events: none !important;
+  transition: opacity 0.3s ease !important;
+}
+
+.card.card-with-watermark:hover::before {
+  opacity: 0.35 !important;
 }
 
 .card.card-with-watermark > * {
@@ -368,6 +386,16 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Alert info */
+.alert-info {
+  background: hsl(190 95% 55% / 0.1);
+  border-left: 4px solid hsl(var(--primary));
+  border-radius: 0.5rem;
+  padding: 1rem;
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
 }
 
 /* Responsividade */
@@ -409,5 +437,13 @@
   
   .actions button {
     width: 100%;
+  }
+  
+  .house-card {
+    padding: 1rem;
+  }
+  
+  .card {
+    padding: 1rem;
   }
 }

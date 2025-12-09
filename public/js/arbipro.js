@@ -24,7 +24,8 @@ export class ArbiPro {
       fixedStake: index === 0,
       lay: false,
       responsibility: "",
-      name: ""
+      name: "",
+      distribution: true
     }));
 
     this.results = { profits: [], totalStake: 0, roi: 0 };
@@ -115,11 +116,13 @@ export class ArbiPro {
     const fixed = active[fixedIndex];
     const fixedStake = Utils.parseFlex(fixed.stake) || 0;
     const fixedOdd = fixed.finalOdd;
+    const fixedCommission = fixed.commission || 0;
     if (!(fixedStake > 0 && fixedOdd > 0)) return;
 
     let changed = false;
     const newHouses = [...this.houses];
 
+    // Calcular responsabilidades LAY primeiro
     active.forEach((h, idx) => {
       const overrides = this.manualOverrides[idx] || {};
       const oddVal = Utils.parseFlex(h.odd) || 0;
@@ -133,75 +136,140 @@ export class ArbiPro {
           newHouses[idx] = { ...newHouses[idx], responsibility: Utils.formatDecimal(responsibility) };
         }
       }
+    });
 
-      if (idx !== fixedIndex && h.finalOdd > 0 && !overrides.stake) {
-        // Calcular o stake necessário para equilibrar os lucros
-        const fixedCommission = fixed.commission || 0;
-        const houseCommission = h.commission || 0;
-        
-        // Retorno da casa fixa após comissão
-        let fixedNetReturn;
-        
-        if (fixed.freebet) {
-          // Freebet: fixedOdd já é finalOdd = (odd_original - 1), então retorno = stake × fixedOdd
-          const freebetGrossReturn = fixedStake * fixedOdd;
-          const freebetCommAmount = freebetGrossReturn * (fixedCommission / 100);
-          fixedNetReturn = freebetGrossReturn - freebetCommAmount;
-        } else {
-          // BACK normal: retorno bruto - comissão sobre o ganho
-          const fixedGrossReturn = fixedStake * fixedOdd;
-          const fixedGrossProfit = fixedGrossReturn - fixedStake;
-          const fixedCommAmount = fixedGrossProfit * (fixedCommission / 100);
-          fixedNetReturn = fixedGrossReturn - fixedCommAmount;
-        }
-        
-        let calcStake;
-        
+    // Calcular retorno líquido da casa fixa
+    let fixedNetReturn;
+    if (fixed.freebet) {
+      const freebetGrossReturn = fixedStake * fixedOdd;
+      const freebetCommAmount = freebetGrossReturn * (fixedCommission / 100);
+      fixedNetReturn = freebetGrossReturn - freebetCommAmount;
+    } else if (fixed.lay) {
+      fixedNetReturn = fixedStake * (1 - fixedCommission / 100);
+    } else {
+      const fixedGrossReturn = fixedStake * fixedOdd;
+      const fixedGrossProfit = fixedGrossReturn - fixedStake;
+      const fixedCommAmount = fixedGrossProfit > 0 ? fixedGrossProfit * (fixedCommission / 100) : 0;
+      fixedNetReturn = fixedGrossReturn - fixedCommAmount;
+    }
+
+    // Identificar casas por categoria
+    const otherHouses = active.map((h, idx) => ({ house: h, idx }))
+      .filter(item => item.idx !== fixedIndex && item.house.finalOdd > 0);
+    
+    // Casas participantes (distribution=true) e casas zeradas (distribution=false)
+    const participating = otherHouses.filter(item => item.house.distribution);
+    const zeroing = otherHouses.filter(item => !item.house.distribution);
+
+    // Se há casas com "Zerar Lucro", precisamos resolver sistema de equações
+    // Para zerar: stake_z × odd_z = totalStake (lucro = 0)
+    // Para participantes: stake_p × odd_p = fixedNetReturn (lucros iguais)
+    // totalStake = fixedStake + Σstake_z + Σstake_p
+    
+    // Substituindo stake_z = totalStake / odd_z:
+    // totalStake = fixedStake + Σ(totalStake/odd_z) + Σstake_p
+    // totalStake × (1 - Σ(1/odd_z)) = fixedStake + Σstake_p
+    // totalStake = (fixedStake + Σstake_p) / (1 - Σ(1/odd_z))
+
+    // Calcular soma dos inversos das odds das casas zeradas
+    let sumInverseZeroing = 0;
+    zeroing.forEach(item => {
+      const h = item.house;
+      // Para LAY e freebet, ajustar conforme necessário
+      sumInverseZeroing += 1 / h.finalOdd;
+    });
+
+    // Calcular stakes das casas participantes (baseado em fixedNetReturn)
+    let sumParticipatingStakes = 0;
+    const participatingStakes = {};
+    
+    participating.forEach(item => {
+      const h = item.house;
+      const houseCommission = h.commission || 0;
+      let calcStake;
+      
+      if (h.lay) {
+        calcStake = fixedNetReturn / (h.finalOdd - houseCommission / 100);
+      } else if (h.freebet) {
+        const factor = h.finalOdd * (1 - houseCommission / 100);
+        calcStake = factor > 0 ? fixedNetReturn / factor : 0;
+      } else {
+        calcStake = fixedNetReturn / h.finalOdd;
+      }
+      
+      participatingStakes[item.idx] = calcStake;
+      
+      // Para o totalStake, considerar freebet não entra
+      if (!h.freebet) {
         if (h.lay) {
-          // Para LAY o cálculo é diferente
-          calcStake = fixedNetReturn / (h.finalOdd - houseCommission / 100);
-        } else if (h.freebet) {
-          // Se esta casa também é freebet
-          // h.finalOdd já é (odd_original - 1), então usar diretamente
-          const factor = h.finalOdd * (1 - houseCommission / 100);
-          calcStake = factor > 0 ? fixedNetReturn / factor : 0;
+          const oddVal = Utils.parseFlex(h.odd) || 0;
+          sumParticipatingStakes += calcStake * Math.max(oddVal - 1, 0); // responsibility
         } else {
-          // Para BACK: stake = fixedNetReturn / odd
-          // A comissão é aplicada sobre (stake * odd - totalStake), não sobre (stake * odd - stake)
-          // Para equilíbrio sem comissão: stake = fixedNetReturn / odd
-          // Com comissão, precisamos iterar, mas como aproximação usamos a fórmula simples
-          if (houseCommission > 0) {
-            // Com comissão: profit = (stake * odd - totalStake) * (1 - commission/100)
-            // Para equilíbrio: fixedNetReturn - totalStake = (stake * odd - totalStake) * (1 - c)
-            // Simplificação: stake ≈ fixedNetReturn / odd (funciona bem quando comissão é baixa)
-            calcStake = fixedNetReturn / h.finalOdd;
-          } else {
-            // Sem comissão: stake = fixedNetReturn / odd
-            calcStake = fixedNetReturn / h.finalOdd;
-          }
+          sumParticipatingStakes += calcStake;
         }
-        
-        let finalStakeStr = this.smartRoundStake(calcStake, fixedNetReturn, h.finalOdd, houseCommission);
-        
-        const finalStakeNum = Utils.parseFlex(finalStakeStr) || 0;
-        const cur = Utils.parseFlex(h.stake) || 0;
-        if (Math.abs(cur - finalStakeNum) > 1e-6) {
-          changed = true;
-          if (h.lay) {
-            const resp = finalStakeNum * Math.max(oddVal - 1, 0);
-            newHouses[idx] = { 
-              ...newHouses[idx], 
-              stake: finalStakeStr, 
-              responsibility: Utils.formatDecimal(resp), 
-              fixedStake: false 
-            };
-          } else {
-            newHouses[idx] = { 
-              ...newHouses[idx], 
-              stake: finalStakeStr, 
-              fixedStake: false 
-            };
-          }
+      }
+    });
+
+    // Calcular contribuição do stake fixo para totalStake
+    let fixedContribution = 0;
+    if (!fixed.freebet) {
+      if (fixed.lay) {
+        fixedContribution = Utils.parseFlex(fixed.responsibility) || (fixedStake * (Utils.parseFlex(fixed.odd) - 1));
+      } else {
+        fixedContribution = fixedStake;
+      }
+    }
+
+    // Resolver para totalStake
+    const denominator = 1 - sumInverseZeroing;
+    let totalStake;
+    
+    if (denominator <= 0.001) {
+      // Não é possível resolver (muitas casas zeradas)
+      totalStake = fixedContribution + sumParticipatingStakes;
+    } else {
+      totalStake = (fixedContribution + sumParticipatingStakes) / denominator;
+    }
+
+    // Agora calcular stake de cada casa
+    active.forEach((h, idx) => {
+      if (idx === fixedIndex) return;
+      const overrides = this.manualOverrides[idx] || {};
+      if (overrides.stake) return;
+      if (h.finalOdd <= 0) return;
+      
+      let calcStake;
+      
+      if (!h.distribution) {
+        // ZERAR LUCRO: stake × odd = totalStake
+        // stake = totalStake / odd
+        calcStake = totalStake / h.finalOdd;
+      } else {
+        // PARTICIPANTE: usa o valor pré-calculado
+        calcStake = participatingStakes[idx] || (fixedNetReturn / h.finalOdd);
+      }
+      
+      const finalStakeStr = this.smartRoundStake(calcStake, fixedNetReturn, h.finalOdd, h.commission || 0);
+      const finalStakeNum = Utils.parseFlex(finalStakeStr) || 0;
+      const cur = Utils.parseFlex(h.stake) || 0;
+      
+      if (Math.abs(cur - finalStakeNum) > 1e-6) {
+        changed = true;
+        const oddVal = Utils.parseFlex(h.odd) || 0;
+        if (h.lay) {
+          const resp = finalStakeNum * Math.max(oddVal - 1, 0);
+          newHouses[idx] = { 
+            ...newHouses[idx], 
+            stake: finalStakeStr, 
+            responsibility: Utils.formatDecimal(resp), 
+            fixedStake: false 
+          };
+        } else {
+          newHouses[idx] = { 
+            ...newHouses[idx], 
+            stake: finalStakeStr, 
+            fixedStake: false 
+          };
         }
       }
     });
@@ -350,6 +418,10 @@ export class ArbiPro {
         </div>
 
         <div style="display: flex; gap: 0.75rem; margin: 0.75rem 0; flex-wrap: wrap;">
+          <label class="checkbox-group" title="Quando ativado, o lucro desta casa será zerado e redistribuído para as outras casas participantes">
+            <input type="checkbox" ${!h.distribution ? 'checked' : ''} data-action="toggleDistribution" data-idx="${idx}" />
+            <span>Zerar</span>
+          </label>
           <label class="checkbox-group">
             <input type="checkbox" ${h.commission !== null ? 'checked' : ''} data-action="toggleCommission" data-idx="${idx}" />
             <span>Comissão</span>
@@ -531,6 +603,11 @@ export class ArbiPro {
     if (!action || idx < 0) return;
 
     switch (action) {
+      case "toggleDistribution":
+        // Checkbox marcado = zerar lucro (distribution: false)
+        this.setHouse(idx, { distribution: !el.checked });
+        this.scheduleUpdate();
+        break;
       case "toggleCommission":
         this.setHouse(idx, { commission: el.checked ? 0 : null });
         this.renderHouses();
@@ -671,6 +748,7 @@ export class ArbiPro {
       const responsibilityCell = hasLayBets ? 
         `<td>${h.lay ? '<strong>R$ ' + (h.responsibility || '0,00') + '</strong>' : '—'}</td>` : '';
       const houseName = h.name || `Casa ${idx + 1}`;
+      const distributionBadge = h.distribution ? '' : '<br><span class="text-small text-muted" style="color: hsl(var(--muted-foreground));">(Zerado)</span>';
       
       return `
         <tr>
@@ -680,7 +758,7 @@ export class ArbiPro {
           <td>${commissionText}</td>
           <td><strong>R$ ${stakeText}</strong>${h.freebet ? '<br><span class="text-small">(Freebet)</span>' : ''}${h.lay ? '<br><span class="text-small">(LAY)</span>' : ''}</td>
           ${responsibilityCell}
-          <td class="${profitClass}"><strong>${profitValue}</strong></td>
+          <td class="${profitClass}" style="${!h.distribution ? 'opacity: 0.5;' : ''}"><strong>${profitValue}</strong>${distributionBadge}</td>
         </tr>
       `;
     }).join("");
@@ -713,6 +791,7 @@ export class ArbiPro {
       if (house.fixedStake) h.fs = 1;
       if (house.responsibility) h.re = String(house.responsibility);
       if (house.name) h.n = house.name;
+      if (!house.distribution) h.d = 0;
       
       // Só adicionar se tiver algum dado
       if (Object.keys(h).length > 0) {
@@ -755,11 +834,12 @@ export class ArbiPro {
           if (h.s !== undefined) houseUpdate.stake = String(h.s);
           if (h.c !== undefined) houseUpdate.commission = String(h.c);
           if (h.i !== undefined) houseUpdate.increase = String(h.i);
-          if (h.f) houseUpdate.freebet = true;
-          if (h.l) houseUpdate.lay = true;
-          if (h.fs) houseUpdate.fixedStake = true;
-          if (h.re !== undefined) houseUpdate.responsibility = String(h.re);
-          if (h.n !== undefined) houseUpdate.name = h.n;
+      if (h.f) houseUpdate.freebet = true;
+      if (h.l) houseUpdate.lay = true;
+      if (h.fs) houseUpdate.fixedStake = true;
+      if (h.re !== undefined) houseUpdate.responsibility = String(h.re);
+      if (h.n !== undefined) houseUpdate.name = h.n;
+      if (h.d !== undefined) houseUpdate.distribution = h.d === 1;
           
           // Usar setHouse para garantir que finalOdd seja calculado corretamente
           this.setHouse(idx, houseUpdate);
@@ -827,7 +907,8 @@ export class ArbiPro {
       freebet: false,
       fixedStake: index === 0,
       lay: false,
-      responsibility: ""
+      responsibility: "",
+      distribution: true
     }));
     
     // Reset manual overrides
