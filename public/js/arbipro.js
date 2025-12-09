@@ -18,6 +18,7 @@ export class ArbiPro {
       odd: "",
       increase: null,
       finalOdd: 0,
+      effectiveOdd: 0, // Odd que considera comissão para cálculos
       stake: "0",
       commission: null,
       freebet: false,
@@ -71,30 +72,21 @@ export class ArbiPro {
 
     active.forEach((h, idx) => {
       const stake = Utils.parseFlex(h.stake) || 0;
-      const odd = h.finalOdd || 0;
       const commission = h.commission || 0;
       
       if (h.lay) {
         const resp = Utils.parseFlex(h.responsibility) || 0;
+        // Lay: ganho = stake × (1 - comissão), perdemos o totalStake menos responsabilidade
         profits[idx] = stake * (1 - commission / 100) - (totalStake - resp);
       } else if (h.freebet) {
-        // Freebet: odd já é finalOdd = (odd_original - 1), então retorno = stake × odd
-        const freebetGrossReturn = stake * odd;
-        // Comissão é aplicada sobre o retorno bruto do freebet
-        const commAmount = freebetGrossReturn * (commission / 100);
-        const freebetNetReturn = freebetGrossReturn - commAmount;
-        profits[idx] = freebetNetReturn - totalStake;
+        // Freebet: usa effectiveOdd que já considera comissão
+        // Retorno líquido = stake × effectiveOdd
+        profits[idx] = stake * h.effectiveOdd - totalStake;
       } else {
-        // BACK normal: retorno bruto menos totalStake, com comissão sobre o lucro bruto
-        const grossReturn = stake * odd;
-        const grossProfit = grossReturn - totalStake;
-        // Comissão só é aplicada se houver lucro
-        if (grossProfit > 0) {
-          const commissionAmount = grossProfit * (commission / 100);
-          profits[idx] = grossProfit - commissionAmount;
-        } else {
-          profits[idx] = grossProfit;
-        }
+        // BACK normal: usa effectiveOdd que já considera comissão
+        // Retorno líquido = stake × effectiveOdd
+        // Lucro = retorno líquido - totalStake
+        profits[idx] = stake * h.effectiveOdd - totalStake;
       }
     });
 
@@ -138,19 +130,17 @@ export class ArbiPro {
       }
     });
 
-    // Calcular retorno líquido da casa fixa
+    // Calcular retorno líquido da casa fixa usando effectiveOdd
     let fixedNetReturn;
     if (fixed.freebet) {
-      const freebetGrossReturn = fixedStake * fixedOdd;
-      const freebetCommAmount = freebetGrossReturn * (fixedCommission / 100);
-      fixedNetReturn = freebetGrossReturn - freebetCommAmount;
+      // Freebet: retorno = stake × effectiveOdd (já com comissão)
+      fixedNetReturn = fixedStake * fixed.effectiveOdd;
     } else if (fixed.lay) {
+      // Lay: ganho = stake × (1 - comissão)
       fixedNetReturn = fixedStake * (1 - fixedCommission / 100);
     } else {
-      const fixedGrossReturn = fixedStake * fixedOdd;
-      const fixedGrossProfit = fixedGrossReturn - fixedStake;
-      const fixedCommAmount = fixedGrossProfit > 0 ? fixedGrossProfit * (fixedCommission / 100) : 0;
-      fixedNetReturn = fixedGrossReturn - fixedCommAmount;
+      // BACK: retorno líquido = stake × effectiveOdd
+      fixedNetReturn = fixedStake * fixed.effectiveOdd;
     }
 
     // Identificar casas por categoria
@@ -171,12 +161,12 @@ export class ArbiPro {
     // totalStake × (1 - Σ(1/odd_z)) = fixedStake + Σstake_p
     // totalStake = (fixedStake + Σstake_p) / (1 - Σ(1/odd_z))
 
-    // Calcular soma dos inversos das odds das casas zeradas
+    // Calcular soma dos inversos das odds EFETIVAS das casas zeradas
     let sumInverseZeroing = 0;
     zeroing.forEach(item => {
       const h = item.house;
-      // Para LAY e freebet, ajustar conforme necessário
-      sumInverseZeroing += 1 / h.finalOdd;
+      // Usar effectiveOdd para considerar comissão corretamente
+      sumInverseZeroing += 1 / h.effectiveOdd;
     });
 
     // Calcular stakes das casas participantes (baseado em fixedNetReturn)
@@ -185,16 +175,16 @@ export class ArbiPro {
     
     participating.forEach(item => {
       const h = item.house;
-      const houseCommission = h.commission || 0;
       let calcStake;
       
       if (h.lay) {
-        calcStake = fixedNetReturn / (h.finalOdd - houseCommission / 100);
-      } else if (h.freebet) {
-        const factor = h.finalOdd * (1 - houseCommission / 100);
-        calcStake = factor > 0 ? fixedNetReturn / factor : 0;
+        const houseCommission = h.commission || 0;
+        // Lay: ganho = stake × (1 - comissão)
+        calcStake = fixedNetReturn / (1 - houseCommission / 100);
       } else {
-        calcStake = fixedNetReturn / h.finalOdd;
+        // BACK e Freebet: usar effectiveOdd (já considera comissão)
+        // stake × effectiveOdd = fixedNetReturn
+        calcStake = h.effectiveOdd > 0 ? fixedNetReturn / h.effectiveOdd : 0;
       }
       
       participatingStakes[item.idx] = calcStake;
@@ -241,12 +231,12 @@ export class ArbiPro {
       let calcStake;
       
       if (!h.distribution) {
-        // ZERAR LUCRO: stake × odd = totalStake
-        // stake = totalStake / odd
-        calcStake = totalStake / h.finalOdd;
+        // ZERAR LUCRO: stake × effectiveOdd = totalStake
+        // stake = totalStake / effectiveOdd
+        calcStake = totalStake / h.effectiveOdd;
       } else {
         // PARTICIPANTE: usa o valor pré-calculado
-        calcStake = participatingStakes[idx] || (fixedNetReturn / h.finalOdd);
+        calcStake = participatingStakes[idx] || (h.effectiveOdd > 0 ? fixedNetReturn / h.effectiveOdd : 0);
       }
       
       const finalStakeStr = this.smartRoundStake(calcStake, fixedNetReturn, h.finalOdd, h.commission || 0);
@@ -670,6 +660,21 @@ export class ArbiPro {
     
     h.finalOdd = h.freebet ? Math.max(calculatedOdd - 1, 0) : calculatedOdd;
 
+    // CALCULAR ODD EFETIVA (considera comissão)
+    // Fórmula: Odd_efetiva = 1 + (Odd - 1) × (1 - Comissão/100)
+    const commissionVal = Utils.parseFlex(h.commission) || 0;
+    if (h.freebet) {
+      // Freebet: retorno = stake × finalOdd, comissão sobre o retorno total
+      h.effectiveOdd = h.finalOdd * (1 - commissionVal / 100);
+    } else if (h.lay) {
+      // Lay: o ganho é o stake, comissão sobre o stake
+      h.effectiveOdd = h.finalOdd; // Lay usa cálculo diferente
+    } else {
+      // BACK normal: Odd_efetiva = 1 + (odd - 1) × (1 - comissão/100)
+      // Isso representa o retorno líquido real por unidade apostada
+      h.effectiveOdd = 1 + (h.finalOdd - 1) * (1 - commissionVal / 100);
+    }
+
     if (h.lay && !(this.manualOverrides[idx] && this.manualOverrides[idx].responsibility)) {
       const stakeVal = Utils.parseFlex(h.stake) || 0;
       if (stakeVal > 0 && oddVal > 1) h.responsibility = Utils.formatDecimal(stakeVal * (oddVal - 1));
@@ -902,6 +907,7 @@ export class ArbiPro {
       odd: "",
       increase: null,
       finalOdd: 0,
+      effectiveOdd: 0,
       stake: "0",
       commission: null,
       freebet: false,
