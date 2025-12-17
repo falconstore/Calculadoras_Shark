@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalculatorArbiProWrapper } from "./CalculatorArbiProWrapper";
 import { CalculatorFreeProWrapper } from "./CalculatorFreeProWrapper";
@@ -6,6 +6,28 @@ import { Calculator, TrendingUp } from "lucide-react";
 
 export const CalculatorTabs = () => {
   const [activeTab, setActiveTab] = useState("arbipro");
+
+  // Detectar qual calculadora abrir baseado nos parâmetros da URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    
+    // Parâmetros exclusivos da FreePro
+    const freeproParams = ['mode', 'ho', 'hc', 'qs', 'fv', 'er', 'co', 'cc', 'cs', 'cr', 'entries', 'numEntries'];
+    
+    // Parâmetros exclusivos da ArbiPro  
+    const arbiproParams = ['n', 'h', 'sc', 'si'];
+    
+    // Verificar se tem parâmetros da FreePro
+    const hasFreePro = freeproParams.some(param => params.has(param));
+    
+    // Verificar se tem parâmetros da ArbiPro
+    const hasArbiPro = arbiproParams.some(param => params.has(param));
+    
+    // Se tem parâmetros da FreePro e NÃO tem da ArbiPro, abrir FreePro
+    if (hasFreePro && !hasArbiPro) {
+      setActiveTab("freepro");
+    }
+  }, []);
 
   return (
     <section id="calculadoras" className="py-20 px-4 bg-muted/30">

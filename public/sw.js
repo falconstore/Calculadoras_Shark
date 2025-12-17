@@ -1,5 +1,8 @@
 // Service Worker com cache inteligente e atualização automática
-const CACHE_VERSION = 'shark-calc-v2.1';
+// IMPORTANTE: não cachear bundles do Vite (/node_modules/.vite, /assets, /src), pois isso pode misturar versões
+// e causar erros como "Invalid hook call" / "Cannot read properties of null (reading 'useState')".
+
+const CACHE_VERSION = 'shark-calc-v2.2';
 const CACHE_NAME = `${CACHE_VERSION}-${Date.now()}`;
 
 // Arquivos estáticos que podem ser cacheados
@@ -53,67 +56,84 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch - estratégia Network First com fallback para cache
+// Fetch
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-  
+
   // Ignorar requests que não são GET
   if (request.method !== 'GET') return;
-  
+
   // Ignorar chrome extensions e outros protocolos
   if (!url.protocol.startsWith('http')) return;
-  
+
+  // NUNCA cachear recursos do bundle do Vite (evita misturar versões)
+  const isViteBundle =
+    url.pathname.startsWith('/node_modules/') ||
+    url.pathname.startsWith('/assets/') ||
+    url.pathname.startsWith('/src/') ||
+    url.pathname.startsWith('/@vite/') ||
+    url.pathname.startsWith('/@react-refresh') ||
+    url.pathname.startsWith('/@id/');
+
+  if (isViteBundle) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   // Para arquivos dinâmicos (JS/CSS), sempre buscar da rede primeiro
   if (DYNAMIC_FILES.some(file => url.pathname.includes(file))) {
     event.respondWith(
       fetch(request)
         .then(response => {
-          // Clonar a resposta antes de retornar
           const responseClone = response.clone();
-          
-          // Atualizar cache em background
           caches.open(CACHE_NAME).then(cache => {
             cache.put(request, responseClone);
           });
-          
           return response;
         })
-        .catch(() => {
-          // Se falhar, tentar o cache
-          return caches.match(request);
-        })
+        .catch(() => caches.match(request))
     );
     return;
   }
-  
-  // Para outros recursos, usar cache-first
-  event.respondWith(
-    caches.match(request)
-      .then(cached => {
-        if (cached) {
-          // Atualizar em background
-          fetch(request).then(response => {
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(request, response);
-            });
-          }).catch(() => {});
-          
-          return cached;
-        }
-        
-        return fetch(request).then(response => {
-          // Cachear nova resposta
-          if (response.status === 200) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(request, responseClone);
-            });
-          }
+
+  // Navegação (HTML): network-first com fallback
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', responseClone));
           return response;
-        });
-      })
+        })
+        .catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+
+  // Outros recursos (imagens, etc.): cache-first
+  event.respondWith(
+    caches.match(request).then((cached) => {
+      if (cached) return cached;
+
+      return fetch(request).then((response) => {
+        if (response.status === 200) {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, responseClone);
+          });
+        }
+        return response;
+      });
+    })
   );
+});
+
+// Listener para mensagens do cliente
+self.addEventListener('message', (event) => {
+  if (event.data === 'skipWaiting') {
+    self.skipWaiting();
+  }
 });
 
 // Listener para mensagens do cliente

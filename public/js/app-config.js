@@ -13,5 +13,7 @@ export const APP_CONFIG = {
   }
 };
 
-// Expor globalmente para uso nas calculadoras
-window.APP_CONFIG = APP_CONFIG;
+// Expor globalmente para compatibilidade
+if (typeof window !== 'undefined') {
+  window.APP_CONFIG = APP_CONFIG;
+}

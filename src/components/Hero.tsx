@@ -1,5 +1,5 @@
-import { Calculator, TrendingUp, Shield } from "lucide-react";
 import { Button } from "./ui/button";
+import sharkLogo from "@/assets/shark-logo.png";
 
 export const Hero = () => {
   const scrollToCalculators = () => {
@@ -7,56 +7,36 @@ export const Hero = () => {
   };
 
   return (
-    <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden py-12">
+    <section className="relative min-h-[50vh] flex items-center justify-center overflow-hidden py-8 pt-24">
       {/* Animated Background */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-muted"></div>
-        <div className="absolute top-20 left-20 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-float"></div>
-        <div className="absolute bottom-20 right-20 w-96 h-96 bg-secondary/20 rounded-full blur-3xl animate-float" style={{ animationDelay: "1s" }}></div>
+        <div className="absolute top-10 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-float"></div>
+        <div className="absolute bottom-10 right-10 w-72 h-72 bg-secondary/20 rounded-full blur-3xl animate-float" style={{ animationDelay: "1s" }}></div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 relative z-10">
-        <div className="max-w-4xl mx-auto text-center space-y-8 animate-fade-in">
-          {/* Logo/Brand */}
-          <div className="inline-block">
-            <h1 className="text-6xl md:text-8xl font-black tracking-tight mb-4">
-              <span className="text-gradient">Shark</span>
-              <span className="text-foreground"> Calculadoras</span>
-            </h1>
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="max-w-3xl mx-auto text-center space-y-6 animate-fade-in">
+          {/* Logo Grande */}
+          <div className="flex justify-center mb-4">
+            <img 
+              src={sharkLogo} 
+              alt="Shark 100% Green" 
+              className="h-32 md:h-44 w-auto drop-shadow-2xl animate-float"
+            />
           </div>
+
+          {/* Título */}
+          <h1 className="text-4xl md:text-6xl font-black tracking-tight">
+            <span className="text-gradient">Shark 100%</span>
+            <span className="text-foreground"> Green</span>
+          </h1>
 
           {/* Tagline */}
-          <p className="text-2xl md:text-3xl text-muted-foreground font-medium">
-            Ferramentas Profissionais para{" "}
-            <span className="text-primary font-bold">Otimização de Apostas</span>
+          <p className="text-xl md:text-2xl text-muted-foreground font-medium">
+            Calculadoras Profissionais para{" "}
+            <span className="text-primary font-bold">Apostas Esportivas</span>
           </p>
-
-          {/* Features */}
-          <div className="grid md:grid-cols-3 gap-6 py-8">
-            <div className="glass-card p-6 rounded-xl glow-hover">
-              <Calculator className="w-12 h-12 text-primary mx-auto mb-4" />
-              <h3 className="text-lg font-bold mb-2">Calculadoras Avançadas</h3>
-              <p className="text-sm text-muted-foreground">
-                ArbiPro e FreePro para cálculos precisos
-              </p>
-            </div>
-
-            <div className="glass-card p-6 rounded-xl glow-hover">
-              <TrendingUp className="w-12 h-12 text-secondary mx-auto mb-4" />
-              <h3 className="text-lg font-bold mb-2">ROI Otimizado</h3>
-              <p className="text-sm text-muted-foreground">
-                Maximize seus lucros com estratégias comprovadas
-              </p>
-            </div>
-
-            <div className="glass-card p-6 rounded-xl glow-hover">
-              <Shield className="w-12 h-12 text-accent mx-auto mb-4" />
-              <h3 className="text-lg font-bold mb-2">Casas Regulamentadas</h3>
-              <p className="text-sm text-muted-foreground">
-                Apenas plataformas verificadas e seguras
-              </p>
-            </div>
-          </div>
 
           {/* CTA */}
           <div className="flex gap-4 justify-center items-center pt-4">
@@ -65,7 +45,7 @@ export const Hero = () => {
               onClick={scrollToCalculators}
               className="gradient-glow text-lg px-8 py-6 font-bold"
             >
-              Começar Agora
+              Ver Calculadoras
             </Button>
             <Button
               size="lg"
@@ -79,12 +59,6 @@ export const Hero = () => {
         </div>
       </div>
 
-      {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-        <div className="w-6 h-10 border-2 border-primary/50 rounded-full flex justify-center">
-          <div className="w-1 h-3 bg-primary rounded-full mt-2 animate-pulse"></div>
-        </div>
-      </div>
     </section>
   );
 };

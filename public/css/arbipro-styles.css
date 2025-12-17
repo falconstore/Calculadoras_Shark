@@ -76,13 +76,140 @@
   background-clip: text;
 }
 
+/* Wrapper do título com toggles globais */
+.section-title-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid hsl(var(--border) / 0.3);
+  flex-wrap: wrap;
+}
+
+.section-title-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.houses-counter {
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.houses-counter.complete {
+  background: hsl(var(--secondary) / 0.2);
+  color: hsl(var(--secondary));
+}
+
+.global-toggles {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.global-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  color: hsl(var(--muted-foreground));
+  transition: all 0.2s ease;
+}
+
+.global-toggle:hover {
+  border-color: hsl(var(--primary));
+  color: hsl(var(--foreground));
+}
+
+.global-toggle input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  accent-color: hsl(var(--primary));
+}
+
+.global-toggle:has(input:checked) {
+  border-color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.1);
+}
+
+.global-toggle:has(input:checked) span {
+  color: hsl(var(--primary));
+  font-weight: 600;
+}
+
+/* === ANIMAÇÕES DE TRANSIÇÃO === */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 /* Cards das casas */
 .house-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.5rem;
   margin-top: 1rem;
+  animation: fadeInUp 0.3s ease-out;
 }
+
+.house-card {
+  animation: fadeInUp 0.3s ease-out;
+  animation-fill-mode: both;
+}
+
+.house-card:nth-child(1) { animation-delay: 0ms; }
+.house-card:nth-child(2) { animation-delay: 50ms; }
+.house-card:nth-child(3) { animation-delay: 100ms; }
+.house-card:nth-child(4) { animation-delay: 150ms; }
+.house-card:nth-child(5) { animation-delay: 200ms; }
+
+/* Animações para modo tabela */
+.house-table-container {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+.house-row {
+  animation: slideInLeft 0.2s ease-out;
+  animation-fill-mode: both;
+}
+
+.house-row:nth-child(1) { animation-delay: 0ms; }
+.house-row:nth-child(2) { animation-delay: 40ms; }
+.house-row:nth-child(3) { animation-delay: 80ms; }
+.house-row:nth-child(4) { animation-delay: 120ms; }
+.house-row:nth-child(5) { animation-delay: 160ms; }
 
 .house-card {
   background: hsl(var(--card) / 0.6);
@@ -170,6 +297,26 @@
 
 .form-input::placeholder {
   color: hsl(var(--muted-foreground));
+}
+
+/* Validação de odds inválidas */
+.form-input.input-invalid,
+.table-input.input-invalid {
+  border-color: hsl(var(--destructive)) !important;
+  background: hsl(var(--destructive) / 0.1) !important;
+  animation: shake 0.3s ease-in-out;
+}
+
+.form-input.input-invalid:focus,
+.table-input.input-invalid:focus {
+  border-color: hsl(var(--destructive)) !important;
+  box-shadow: 0 0 0 4px hsl(var(--destructive) / 0.2) !important;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
 }
 
 /* Checkboxes customizados */
@@ -390,7 +537,7 @@
 
 /* Alert info */
 .alert-info {
-  background: hsl(190 95% 55% / 0.1);
+  background: hsl(var(--primary) / 0.1);
   border-left: 4px solid hsl(var(--primary));
   border-radius: 0.5rem;
   padding: 1rem;
@@ -398,10 +545,395 @@
   font-size: 0.875rem;
 }
 
+/* === TOGGLE DE VISUALIZAÇÃO === */
+.view-toggle {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.btn-view {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: 2px solid hsl(var(--border));
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-view:hover {
+  border-color: hsl(var(--primary));
+  color: hsl(var(--primary));
+}
+
+.btn-view.active {
+  background: linear-gradient(135deg, hsl(var(--shark-gradient-start)), hsl(var(--shark-gradient-end)));
+  border-color: transparent;
+  color: hsl(var(--primary-foreground));
+}
+
+/* === MODO TABELA === */
+.house-table-container {
+  overflow-x: auto;
+}
+
+.house-table-wrapper {
+  min-width: 100%;
+}
+
+.house-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border) / 0.5);
+}
+
+.house-table thead {
+  background: linear-gradient(135deg, hsl(var(--shark-gradient-start)), hsl(var(--shark-gradient-end)));
+}
+
+.house-table th {
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  font-size: 0.665rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--primary-foreground));
+  white-space: nowrap;
+}
+
+.house-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.3);
+  font-size: 0.83rem;
+  color: hsl(var(--foreground));
+  vertical-align: middle;
+  text-align: center;
+}
+
+.house-row {
+  background: hsl(var(--card) / 0.6);
+  transition: background 0.2s ease;
+}
+
+.house-row:hover {
+  background: hsl(var(--card) / 0.9);
+}
+
+.house-name-editable {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  display: inline-block;
+  min-width: 80px;
+}
+
+.house-name-editable:focus {
+  outline: none;
+  background: hsl(var(--background));
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.5);
+}
+
+/* Larguras das colunas da tabela - +12% para odd e stake */
+.col-casa { width: 100px; text-align: center; }
+.col-odd { width: 78px; text-align: center; }
+.col-commission { width: 90px; text-align: center; animation: fadeSlideIn 0.3s ease-out; }
+.col-increase { width: 90px; text-align: center; animation: fadeSlideIn 0.3s ease-out; }
+.col-oddfinal { width: 80px; text-align: center; }
+.col-stake { width: 112px; text-align: center; }
+.col-backlay { width: 60px; text-align: center; }
+.col-opcoes { width: 130px; text-align: center; }
+.col-fixar { width: 45px; text-align: center; }
+.col-deficit { width: 100px; text-align: center; }
+.col-lucro { width: 115px; text-align: center; }
+
+.col-deficit span {
+  font-family: ui-monospace, monospace;
+  font-weight: 600;
+  font-size: 0.83rem;
+}
+
+/* Animação suave para colunas dinâmicas */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Coluna C/A - modificadores */
+.modifier-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  align-items: center;
+}
+
+.modifier-mini {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  cursor: pointer;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  transition: all 0.2s ease;
+}
+
+.modifier-mini:hover {
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+}
+
+.modifier-mini input[type="checkbox"] {
+  width: 0.75rem;
+  height: 0.75rem;
+  cursor: pointer;
+  accent-color: hsl(var(--primary));
+}
+
+/* Input mini para comissão/aumento */
+.table-input-mini {
+  width: 50px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.375rem;
+  font-size: 0.665rem;
+  font-family: ui-monospace, monospace;
+  text-align: center;
+}
+
+.table-input-mini:focus {
+  outline: none;
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+}
+
+.table-input {
+  width: 62px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.76rem;
+  font-weight: 500;
+  font-family: ui-monospace, monospace;
+  text-align: center;
+}
+
+.table-input:focus {
+  outline: none;
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+}
+
+.table-stake-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  justify-content: center;
+}
+
+.currency-prefix {
+  font-size: 0.665rem;
+  color: hsl(var(--muted-foreground));
+  font-weight: 600;
+}
+
+.stake-input {
+  width: 68px;
+}
+
+.odd-final {
+  font-family: ui-monospace, monospace;
+  font-weight: 600;
+  color: hsl(var(--primary));
+}
+
+.btn-toggle-mini {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-radius: 0.375rem;
+  border: 1px solid hsl(var(--border));
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-toggle-mini:hover {
+  border-color: hsl(var(--primary));
+  color: hsl(var(--primary));
+}
+
+.btn-toggle-mini.active {
+  background: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.table-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.option-mini {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  transition: all 0.2s ease;
+  min-width: 65px;
+}
+
+.option-mini:hover {
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+}
+
+.option-mini input[type="checkbox"] {
+  width: 0.875rem;
+  height: 0.875rem;
+  cursor: pointer;
+  accent-color: hsl(var(--primary));
+}
+
+.btn-fix {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  border-radius: 0.375rem;
+  border: 1px solid hsl(var(--border));
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-fix:hover {
+  background: hsl(var(--muted));
+}
+
+.btn-fix.active {
+  background: hsl(var(--primary) / 0.2);
+  border-color: hsl(var(--primary));
+}
+
+/* Linha condicional (comissão, aumento, responsabilidade) */
+.conditional-row {
+  background: hsl(var(--muted) / 0.3);
+}
+
+.conditional-row td {
+  padding: 0.5rem;
+}
+
+.conditional-fields {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.25rem 0;
+}
+
+.cond-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cond-field label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+  white-space: nowrap;
+}
+
+.table-input-small {
+  width: 70px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.375rem;
+  font-size: 0.75rem;
+  font-family: ui-monospace, monospace;
+}
+
+.table-input-small:focus {
+  outline: none;
+  border-color: hsl(var(--primary));
+}
+
+/* Responsabilidade inline na coluna stake */
+.table-responsibility-wrapper {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.responsibility-label {
+  font-size: 0.6rem;
+  color: hsl(var(--muted-foreground));
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.responsibility-inline {
+  width: 100%;
+}
+
+/* Coluna de lucro - FONTE MAIOR */
+.profit-cell {
+  text-align: center;
+  font-family: ui-monospace, monospace;
+  font-weight: 700;
+  white-space: nowrap;
+  font-size: 0.95rem;
+}
+
+.profit-cell .profit-positive {
+  color: hsl(var(--secondary));
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.profit-cell .profit-negative {
+  color: hsl(var(--destructive));
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
 /* Responsividade */
 @media (max-width: 768px) {
   .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
   
   .house-grid {
@@ -424,11 +956,43 @@
   .results-table td {
     padding: 0.75rem 0.5rem;
   }
+
+  .house-table th,
+  .house-table td {
+    padding: 0.375rem 0.25rem;
+  }
+
+  .table-input {
+    width: 55px;
+    font-size: 0.75rem;
+  }
+
+  .stake-input {
+    width: 65px;
+  }
+
+  /* Colunas responsivas tablet */
+  .col-casa { width: 80px; }
+  .col-odd { width: 65px; }
+  .col-commission { width: 70px; }
+  .col-increase { width: 70px; }
+  .col-stake { width: 95px; }
+  .col-opcoes { width: 100px; }
+  .col-deficit { width: 80px; }
+  .col-lucro { width: 90px; }
+  .col-fixar { width: 35px; }
+  
+  .currency-prefix { font-size: 0.6rem; }
+  
+  .col-deficit span,
+  .col-lucro span {
+    font-size: 0.75rem;
+  }
 }
 
 @media (max-width: 480px) {
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
   
   .actions {
@@ -446,4 +1010,98 @@
   .card {
     padding: 1rem;
   }
+
+  .house-table {
+    font-size: 0.65rem;
+  }
+
+  .table-options {
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  /* Colunas responsivas mobile */
+  .col-casa { width: 60px; }
+  .col-odd { width: 55px; }
+  .col-commission { width: 55px; }
+  .col-increase { width: 55px; }
+  .col-stake { width: 75px; }
+  .col-opcoes { width: 70px; }
+  .col-deficit { width: 65px; }
+  .col-lucro { width: 70px; }
+  .col-fixar { width: 30px; }
+  .col-backlay { width: 45px; }
+  
+  .table-input {
+    width: 45px;
+    font-size: 0.65rem;
+    padding: 0.25rem;
+  }
+  
+  .stake-input {
+    width: 50px;
+    font-size: 0.65rem;
+  }
+  
+  .currency-prefix { 
+    font-size: 0.55rem; 
+    padding: 0.125rem;
+  }
+  
+  .col-deficit span,
+  .col-lucro span {
+    font-size: 0.65rem;
+  }
+  
+  .btn-fix {
+    font-size: 0.7rem;
+    padding: 0.125rem;
+  }
+}
+
+/* === LIGHT MODE ARBIPRO === */
+html.light .house-card {
+  background: hsl(var(--card) / 0.95);
+  border-color: hsl(var(--border));
+}
+
+html.light .form-input,
+html.light .form-select {
+  background: hsl(0 0% 100%);
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+html.light .form-input:focus,
+html.light .form-select:focus {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 4px hsl(var(--primary) / 0.15);
+}
+
+html.light .stat-card {
+  background: hsl(var(--card) / 0.9);
+}
+
+html.light .card {
+  background: hsl(var(--card) / 0.95);
+}
+
+html.light .results-table tbody tr {
+  background: hsl(var(--card) / 0.9);
+}
+
+html.light .table-input,
+html.light .table-input-mini {
+  background: hsl(0 0% 100%);
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+html.light .btn-toggle {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+}
+
+html.light .global-toggle {
+  background: hsl(var(--card));
 }

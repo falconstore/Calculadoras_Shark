@@ -37,6 +37,8 @@ export const Utils = {
   }
 };
 
-// Expor globalmente
-window.Utils = Utils;
+// Expor globalmente para compatibilidade
+if (typeof window !== 'undefined') {
+  window.Utils = Utils;
+}
 

@@ -1,9 +1,9 @@
 // assets/js/calculators/arbipro.js - VERSÃO COMPLETA ATUALIZADA
 // Calculadora de Arbitragem completa
 
-// Usa variáveis globais window.Utils e window.APP_CONFIG
-const Utils = window.Utils;
-const APP_CONFIG = window.APP_CONFIG;
+// Importar dependências usando ES6 modules
+import { Utils } from './helpers.js';
+import { APP_CONFIG } from './app-config.js';
 
 export class ArbiPro {
   constructor() {
@@ -13,6 +13,9 @@ export class ArbiPro {
     this.displayRounding = "0.01";
     this.manualOverrides = {};
     this.pending = false;
+    this.viewMode = "cards"; // 'cards' ou 'table'
+    this.showCommission = false; // Toggle global para mostrar coluna Comissão
+    this.showIncrease = false;   // Toggle global para mostrar coluna Aumento
     
     this.houses = Array.from({ length: this.MAX_HOUSES }).map((_, index) => ({
       odd: "",
@@ -136,8 +139,11 @@ export class ArbiPro {
       // Freebet: retorno = stake × effectiveOdd (já com comissão)
       fixedNetReturn = fixedStake * fixed.effectiveOdd;
     } else if (fixed.lay) {
-      // Lay: ganho = stake × (1 - comissão)
-      fixedNetReturn = fixedStake * (1 - fixedCommission / 100);
+      // Lay fixo: retorno alvo = stake × (oddLay - comissão)
+      // Equaliza: stake_back × odd_back = stake_lay × (odd_lay - comm)
+      const oddLay = fixed.finalOdd;
+      const commissionDecimal = fixedCommission / 100;
+      fixedNetReturn = fixedStake * (oddLay - commissionDecimal);
     } else {
       // BACK: retorno líquido = stake × effectiveOdd
       fixedNetReturn = fixedStake * fixed.effectiveOdd;
@@ -296,7 +302,7 @@ export class ArbiPro {
         <p style="color: hsl(var(--muted-foreground)); font-size: 1.125rem; text-align: center;">Calcule stakes otimizados para garantir lucro em qualquer resultado, usando freebet ou nao</p>
       </div>
 
-      <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+      <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
         <div class="stat-card">
           <div class="stat-label">Configurações</div>
           <div class="form-group" style="margin: 0.75rem 0 0 0;">
@@ -306,6 +312,10 @@ export class ArbiPro {
               <option value="4" ${this.numHouses===4?'selected':''}>4 Casas</option>
               <option value="5" ${this.numHouses===5?'selected':''}>5 Casas</option>
               <option value="6" ${this.numHouses===6?'selected':''}>6 Casas</option>
+              <option value="7" ${this.numHouses===7?'selected':''}>7 Casas</option>
+              <option value="8" ${this.numHouses===8?'selected':''}>8 Casas</option>
+              <option value="9" ${this.numHouses===9?'selected':''}>9 Casas</option>
+              <option value="10" ${this.numHouses===10?'selected':''}>10 Casas</option>
             </select>
           </div>
         </div>
@@ -321,11 +331,47 @@ export class ArbiPro {
             </select>
           </div>
         </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Visualização</div>
+          <div class="view-toggle" style="margin: 0.75rem 0 0 0; display: flex; gap: 0.5rem;">
+            <button id="viewCards" class="btn-view ${this.viewMode === 'cards' ? 'active' : ''}" title="Visualização em Cards">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+              </svg>
+            </button>
+            <button id="viewTable" class="btn-view ${this.viewMode === 'table' ? 'active' : ''}" title="Visualização em Tabela">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
 
       <div class="card">
-        <div class="section-title">Casas de Apostas</div>
-        <div id="houses" class="house-grid"></div>
+        <div class="section-title-wrapper">
+          <div class="section-title-left">
+            <span class="section-title" style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">Casas de Apostas</span>
+            <span id="housesCounter" class="houses-counter">0/${this.numHouses} preenchidas</span>
+          </div>
+          <div class="global-toggles" style="${this.viewMode === 'cards' ? 'display: none;' : ''}">
+            <label class="global-toggle" title="Comissão da Exchange (ex: Betfair cobra ~5% sobre lucros LAY)">
+              <input type="checkbox" id="globalCommission" ${this.showCommission ? 'checked' : ''} />
+              <span>Comissão</span>
+            </label>
+            <label class="global-toggle" title="Usar para aumentos de odd promocionais (ex: Bet365 oferece +20% na odd)">
+              <input type="checkbox" id="globalIncrease" ${this.showIncrease ? 'checked' : ''} />
+              <span>Aumento</span>
+            </label>
+          </div>
+        </div>
+        <div id="houses" class="${this.viewMode === 'cards' ? 'house-grid' : 'house-table-container'}"></div>
       </div>
 
       <div class="card card-with-watermark" style="margin-top: 1.5rem;">
@@ -376,9 +422,113 @@ export class ArbiPro {
     const housesContainer = document.getElementById("houses");
     if (!housesContainer) return;
     
-    housesContainer.innerHTML = this.activeHouses()
-      .map((h, idx) => this.cardHTML(idx, h))
-      .join("");
+    if (this.viewMode === 'table') {
+      housesContainer.className = 'house-table-container';
+      housesContainer.innerHTML = this.renderHousesTable();
+    } else {
+      housesContainer.className = 'house-grid';
+      housesContainer.innerHTML = this.activeHouses()
+        .map((h, idx) => this.cardHTML(idx, h))
+        .join("");
+    }
+  }
+
+  renderHousesTable() {
+    const active = this.activeHouses();
+    
+    return `
+      <div class="house-table-wrapper">
+        <table class="house-table">
+          <thead>
+            <tr>
+              <th class="col-casa">Casa</th>
+              <th class="col-odd">Odd</th>
+              ${this.showCommission ? '<th class="col-commission">COMISSÃO</th>' : ''}
+              ${this.showIncrease ? '<th class="col-increase">AUMENTO</th>' : ''}
+              <th class="col-oddfinal">Odd Final</th>
+              <th class="col-stake">Stake</th>
+              <th class="col-backlay">Back/Lay</th>
+              <th class="col-opcoes">Opções</th>
+              <th class="col-fixar">Fixar</th>
+              <th class="col-lucro">Lucro</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${active.map((h, idx) => this.tableRowHTML(idx, h)).join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  tableRowHTML(idx, h) {
+    const oddDisplay = (h.finalOdd || 0).toFixed(2).replace('.', ',');
+    const houseName = h.name || `Casa ${idx + 1}`;
+    const profit = this.results.profits[idx] || 0;
+    const profitClass = profit >= 0 ? 'profit-positive' : 'profit-negative';
+    const profitDisplay = Utils.formatDecimal(Math.abs(profit));
+    
+    return `
+      <tr class="house-row" data-idx="${idx}">
+        <td class="col-casa">
+          <span class="house-name-editable" contenteditable="true" data-idx="${idx}" data-action="editHouseName" spellcheck="false">${houseName}</span>
+        </td>
+        <td class="col-odd">
+          <input data-action="odd" data-idx="${idx}" type="text" inputmode="decimal" value="${h.odd}"
+            class="table-input" placeholder="0.00" />
+        </td>
+        ${this.showCommission ? `
+          <td class="col-commission">
+            <input data-action="commissionValue" data-idx="${idx}" type="text" inputmode="decimal" 
+              value="${h.commission || ''}" class="table-input-mini" placeholder="%" />
+          </td>
+        ` : ''}
+        ${this.showIncrease ? `
+          <td class="col-increase">
+            <input data-action="increaseValue" data-idx="${idx}" type="text" inputmode="decimal" 
+              value="${h.increase || ''}" class="table-input-mini" placeholder="%" />
+          </td>
+        ` : ''}
+        <td class="col-oddfinal odd-final">${oddDisplay}</td>
+        <td class="col-stake">
+          <div class="table-stake-wrapper">
+            <span class="currency-prefix">R$</span>
+            <input data-action="stake" data-idx="${idx}" type="text" inputmode="decimal" value="${h.stake || ''}"
+              class="table-input stake-input" />
+          </div>
+          ${h.lay ? `
+            <div class="table-responsibility-wrapper">
+              <span class="responsibility-label">RESP.</span>
+              <input data-action="responsibility" data-idx="${idx}" type="text" inputmode="decimal" 
+                value="${h.responsibility || ''}" class="table-input-small responsibility-inline" />
+            </div>
+          ` : ''}
+        </td>
+        <td class="col-backlay">
+          <button data-action="toggleLay" data-idx="${idx}" class="btn-toggle-mini ${h.lay ? 'active' : ''}">${h.lay ? 'LAY' : 'BACK'}</button>
+        </td>
+        <td class="col-opcoes">
+          <div class="table-options">
+            <label class="option-mini" title="Zerar Lucro">
+              <input type="checkbox" ${!h.distribution ? 'checked' : ''} data-action="toggleDistribution" data-idx="${idx}" />
+              <span>Zerar</span>
+            </label>
+            <label class="option-mini" title="Freebet">
+              <input type="checkbox" ${h.freebet ? 'checked' : ''} data-action="toggleFreebet" data-idx="${idx}" />
+              <span>Freebet</span>
+            </label>
+          </div>
+        </td>
+        <td class="col-fixar">
+          <button data-action="fixStake" data-idx="${idx}" class="btn-fix ${h.fixedStake ? 'active' : ''}" title="${h.fixedStake ? 'Stake Fixada' : 'Fixar Stake'}">
+            ${h.fixedStake ? '📌' : '📍'}
+          </button>
+        </td>
+        <td class="col-lucro profit-cell">
+          <span class="${profitClass}">${profit >= 0 ? '' : '-'}R$ ${profitDisplay}</span>
+        </td>
+      </tr>
+    `;
   }
 
   cardHTML(idx, h) {
@@ -493,6 +643,66 @@ export class ArbiPro {
       });
     }
 
+    // Toggle de visualização
+    const viewCardsBtn = document.getElementById("viewCards");
+    const viewTableBtn = document.getElementById("viewTable");
+    
+    if (viewCardsBtn) {
+      viewCardsBtn.addEventListener("click", () => {
+        this.viewMode = 'cards';
+        viewCardsBtn.classList.add('active');
+        viewTableBtn?.classList.remove('active');
+        // Esconder toggles globais no modo cards
+        const togglesDiv = document.querySelector('.global-toggles');
+        if (togglesDiv) togglesDiv.style.display = 'none';
+        this.renderHouses();
+        this.scheduleUpdate();
+      });
+    }
+    
+    if (viewTableBtn) {
+      viewTableBtn.addEventListener("click", () => {
+        this.viewMode = 'table';
+        viewTableBtn.classList.add('active');
+        viewCardsBtn?.classList.remove('active');
+        // Mostrar toggles globais no modo tabela
+        const togglesDiv = document.querySelector('.global-toggles');
+        if (togglesDiv) togglesDiv.style.display = 'flex';
+        this.renderHouses();
+        this.scheduleUpdate();
+      });
+    }
+
+    // Toggles globais de Comissão e Aumento
+    const globalCommission = document.getElementById('globalCommission');
+    const globalIncrease = document.getElementById('globalIncrease');
+    
+    if (globalCommission) {
+      globalCommission.addEventListener('change', (e) => {
+        this.showCommission = e.target.checked;
+        // Quando ativado, define commission como 0 para todas as casas; quando desativado, define como null
+        this.houses = this.houses.map(h => ({
+          ...h,
+          commission: e.target.checked ? (h.commission !== null ? h.commission : 0) : null
+        }));
+        this.renderHouses();
+        this.scheduleUpdate();
+      });
+    }
+    
+    if (globalIncrease) {
+      globalIncrease.addEventListener('change', (e) => {
+        this.showIncrease = e.target.checked;
+        // Quando ativado, define increase como 0 para todas as casas; quando desativado, define como null
+        this.houses = this.houses.map(h => ({
+          ...h,
+          increase: e.target.checked ? (h.increase !== null ? h.increase : 0) : null
+        }));
+        this.renderHouses();
+        this.scheduleUpdate();
+      });
+    }
+
     // Events das casas
     this.bindHouseEvents();
     
@@ -517,6 +727,21 @@ export class ArbiPro {
     container.addEventListener("change", (e) => this.handleChange(e));
     container.addEventListener("click", (e) => this.handleClick(e));
     container.addEventListener("keydown", (e) => this.handleKeyDown(e));
+    container.addEventListener("blur", (e) => this.handleBlur(e), true);
+  }
+
+  handleBlur(e) {
+    const t = e.target;
+    const action = t.getAttribute("data-action");
+    const idx = parseInt(t.getAttribute("data-idx") || "-1", 10);
+    
+    if (action === "stake" && idx >= 0) {
+      const val = Utils.parseFlex(t.value);
+      if (val > 0) {
+        t.value = val.toFixed(2).replace('.', ',');
+        this.setHouse(idx, { stake: t.value });
+      }
+    }
   }
 
   handleKeyDown(e) {
@@ -554,6 +779,7 @@ export class ArbiPro {
           }
         }
         this.setHouse(idx, { odd: t.value });
+        this.validateOddField(idx, t);
         break;
       case "stake":
         this.setHouse(idx, { stake: t.value }, ["stake"]);
@@ -695,17 +921,86 @@ export class ArbiPro {
 
   updateAllHouseUIs() {
     this.activeHouses().forEach((_, i) => this.updateCardComputed(i));
+    this.updateHousesCounter();
+  }
+
+  getFilledHousesCount() {
+    return this.activeHouses().filter(h => Utils.parseFlex(h.odd) > 0).length;
+  }
+
+  updateHousesCounter() {
+    const counter = document.getElementById('housesCounter');
+    if (!counter) return;
+    
+    const filled = this.getFilledHousesCount();
+    const total = this.numHouses;
+    counter.textContent = `${filled}/${total} preenchidas`;
+    counter.classList.toggle('complete', filled === total && total > 0);
   }
 
   updateCardComputed(idx) {
     const h = this.houses[idx];
+    
+    // Atualizar Odd Final (cards)
     const oddEl = document.getElementById(`finalOdd-${idx}`);
     if (oddEl) oddEl.textContent = (h.finalOdd || 0).toFixed(2).replace('.', ',');
     
+    // Atualizar Odd Final (tabela)
+    const oddTableEl = document.querySelector(`.house-row[data-idx="${idx}"] .odd-final`);
+    if (oddTableEl) oddTableEl.textContent = (h.finalOdd || 0).toFixed(2).replace('.', ',');
+    
+    // Atualizar stake (se não houver override manual)
     if (!(this.manualOverrides[idx] && this.manualOverrides[idx].stake)) {
+      // Cards - busca por ID
       const sEl = document.getElementById(`stake-${idx}`);
       if (sEl) sEl.value = h.stake || "";
+      
+      // Tabela - busca por data-attributes
+      const sTableEl = document.querySelector(`input[data-action="stake"][data-idx="${idx}"]`);
+      if (sTableEl) sTableEl.value = h.stake || "";
     }
+    
+    // Atualizar responsabilidade para apostas LAY (se não houver override manual)
+    if (h.lay && !(this.manualOverrides[idx] && this.manualOverrides[idx].responsibility)) {
+      // Cards - busca por ID
+      const respCardEl = document.getElementById(`responsibility-${idx}`);
+      if (respCardEl) respCardEl.value = h.responsibility || "";
+      
+      // Tabela - busca por data-attributes
+      const respTableEl = document.querySelector(`input[data-action="responsibility"][data-idx="${idx}"]`);
+      if (respTableEl) respTableEl.value = h.responsibility || "";
+    }
+    
+    // Atualizar coluna LUCRO na tabela de "Casas de Apostas"
+    const profit = this.results.profits[idx] || 0;
+    const profitCell = document.querySelector(`.house-row[data-idx="${idx}"] .profit-cell span`);
+    if (profitCell) {
+      const profitClass = profit >= 0 ? 'profit-positive' : 'profit-negative';
+      const profitDisplay = Utils.formatDecimal(Math.abs(profit));
+      profitCell.className = profitClass;
+      profitCell.textContent = `${profit >= 0 ? '' : '-'}R$ ${profitDisplay}`;
+    }
+  }
+
+  // Validação visual para odds inválidas
+  validateOddField(idx, inputEl = null) {
+    const h = this.houses[idx];
+    const oddValue = Utils.parseFlex(h.odd);
+    const isValid = !h.odd || oddValue >= 1.01;
+    
+    // Se o input foi passado diretamente, usar ele
+    if (inputEl) {
+      inputEl.classList.toggle('input-invalid', !isValid);
+    }
+    
+    // Buscar e atualizar todos os elementos de input de odd para este índice
+    const oddCardEl = document.getElementById(`odd-${idx}`);
+    const oddTableEl = document.querySelector(`input[data-action="odd"][data-idx="${idx}"]`);
+    
+    if (oddCardEl) oddCardEl.classList.toggle('input-invalid', !isValid);
+    if (oddTableEl) oddTableEl.classList.toggle('input-invalid', !isValid);
+    
+    return isValid;
   }
 
   updateResultsUI() {
@@ -783,6 +1078,8 @@ export class ArbiPro {
     const state = {
       n: this.numHouses,
       r: this.roundingValue,
+      sc: this.showCommission ? 1 : 0,
+      si: this.showIncrease ? 1 : 0,
       h: []
     };
 
@@ -831,6 +1128,19 @@ export class ArbiPro {
         if (select) select.value = this.displayRounding;
       }
 
+      // Restaurar toggles globais
+      if (params.has('sc')) {
+        this.showCommission = params.get('sc') === '1';
+        const checkbox = document.getElementById('globalCommission');
+        if (checkbox) checkbox.checked = this.showCommission;
+      }
+
+      if (params.has('si')) {
+        this.showIncrease = params.get('si') === '1';
+        const checkbox = document.getElementById('globalIncrease');
+        if (checkbox) checkbox.checked = this.showIncrease;
+      }
+
       // Restaurar casas - PRESERVAR VALORES EXATOS
       if (params.has('h')) {
         const housesData = JSON.parse(params.get('h'));
@@ -871,6 +1181,8 @@ export class ArbiPro {
     
     params.set('n', String(state.n));
     params.set('r', String(state.r));
+    if (state.sc) params.set('sc', '1');
+    if (state.si) params.set('si', '1');
     if (state.h.length > 0) {
       params.set('h', JSON.stringify(state.h));
     }
@@ -905,6 +1217,14 @@ export class ArbiPro {
       this.roundingValue = 0.01;
       this.displayRounding = '0.01';
     }
+
+    // Reset toggles globais
+    this.showCommission = false;
+    this.showIncrease = false;
+    const globalCommission = document.getElementById('globalCommission');
+    const globalIncrease = document.getElementById('globalIncrease');
+    if (globalCommission) globalCommission.checked = false;
+    if (globalIncrease) globalIncrease.checked = false;
     
     // Reset houses data
     this.houses = Array.from({ length: this.MAX_HOUSES }).map((_, index) => ({

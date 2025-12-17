@@ -129,7 +129,7 @@
 #panel-2 button,
 #casas-content button {
   background: linear-gradient(135deg, hsl(var(--shark-gradient-start)), hsl(var(--shark-gradient-end)));
-  color: white;
+  color: hsl(var(--primary-foreground));
   border: none;
   border-radius: 8px;
   padding: 0.75rem 1.5rem;
@@ -184,7 +184,7 @@
 /* === CARDS DAS CASAS DE APOSTAS === */
 #panel-1 .house-card,
 #panel-2 .house-card {
-  background: rgba(15, 23, 42, 0.6);
+  background: hsl(var(--card) / 0.6);
   border: 2px solid hsl(var(--border) / 0.5);
   border-radius: 12px;
   padding: 1.5rem;
@@ -222,7 +222,7 @@
 /* === RESULTADOS === */
 #panel-1 .result-card,
 #panel-2 .result-card {
-  background: rgba(15, 23, 42, 0.8);
+  background: hsl(var(--card) / 0.8);
   border: 2px solid hsl(var(--border) / 0.5);
   border-radius: 12px;
   padding: 1.5rem;
@@ -323,7 +323,7 @@
   text-align: left;
   font-weight: 700;
   font-size: 0.875rem;
-  color: white;
+  color: hsl(var(--primary-foreground));
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -350,7 +350,7 @@
 /* === CONFIGURAÇÕES E CONTROLES === */
 #panel-1 .config-section,
 #panel-2 .config-section {
-  background: rgba(15, 23, 42, 0.4);
+  background: hsl(var(--muted) / 0.4);
   border: 2px solid hsl(var(--border) / 0.5);
   border-radius: 12px;
   padding: 1.5rem;
@@ -460,4 +460,44 @@ html.dark #panel-1,
 html.dark #panel-2,
 html.dark #casas-content {
   color-scheme: dark;
+}
+
+/* === LIGHT MODE === */
+html.light #panel-1 .house-card,
+html.light #panel-2 .house-card {
+  background: hsl(var(--card) / 0.95);
+  border-color: hsl(var(--border));
+}
+
+html.light #panel-1 input[type="text"],
+html.light #panel-1 input[type="number"],
+html.light #panel-2 input[type="text"],
+html.light #panel-2 input[type="number"],
+html.light #casas-content input[type="text"],
+html.light #casas-content input[type="search"] {
+  background: hsl(0 0% 100%);
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+html.light #panel-1 select,
+html.light #panel-2 select,
+html.light #casas-content select {
+  background: hsl(0 0% 100%);
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.25em;
+}
+
+html.light #panel-1 .config-section,
+html.light #panel-2 .config-section {
+  background: hsl(var(--muted) / 0.3);
+}
+
+html.light #panel-1 .result-card,
+html.light #panel-2 .result-card {
+  background: hsl(var(--card) / 0.95);
 }

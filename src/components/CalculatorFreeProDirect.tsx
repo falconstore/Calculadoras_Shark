@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { toast } from "@/hooks/use-toast";
-import { Link, Trash2, Loader2 } from "lucide-react";
+import { Link, Trash2, Loader2, LayoutGrid, List } from "lucide-react";
 
 interface FreebetEntry {
   odd: string;
   commission: string;
   isLay: boolean;
+  stake: string;
+  stakeManual: boolean;
 }
 
 export const CalculatorFreeProDirect = () => {
@@ -14,11 +16,13 @@ export const CalculatorFreeProDirect = () => {
   const [rounding, setRounding] = useState(1.00);
   const [isSharing, setIsSharing] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [fixedStakeIndex, setFixedStakeIndex] = useState<number | null>(null);
   
-  // Nomes editáveis para os cards
+  // Nomes editáveis para os cards - expandido para 10 casas
   const [houseNames, setHouseNames] = useState<string[]>([
     "Casa Promo",
-    ...Array(5).fill(null).map((_, i) => `Casa ${i + 2}`)
+    ...Array(9).fill(null).map((_, i) => `Casa ${i + 2}`)
   ]);
   const [editingName, setEditingName] = useState<number | null>(null);
   
@@ -35,9 +39,9 @@ export const CalculatorFreeProDirect = () => {
   const [cashbackStake, setCashbackStake] = useState("");
   const [cashbackRate, setCashbackRate] = useState("");
   
-  // Coverage entries
+  // Coverage entries - expandido para 10 mercados
   const [entries, setEntries] = useState<FreebetEntry[]>(
-    Array(5).fill(null).map(() => ({ odd: "", commission: "", isLay: false }))
+    Array(9).fill(null).map(() => ({ odd: "", commission: "", isLay: false, stake: "", stakeManual: false }))
   );
   
   // Results
@@ -72,14 +76,45 @@ export const CalculatorFreeProDirect = () => {
     });
   };
 
-  const calculateFreebet = () => {
+  const roundStep = useCallback((v: number) => Math.round(v / rounding) * rounding, [rounding]);
+
+  // Formatar stake como xx,xx
+  const formatStakeValue = (value: string): string => {
+    const num = parseFlex(value);
+    if (isNaN(num) || num === 0) return '';
+    return num.toFixed(2).replace('.', ',');
+  };
+
+  // Handler para formatação ao sair do campo
+  const handleStakeBlur = (idx: number, value: string) => {
+    const formatted = formatStakeValue(value);
+    if (formatted) {
+      updateEntry(idx, 'stake', formatted);
+    }
+  };
+
+  // Handler genérico para formatação de valores monetários
+  const handleMoneyBlur = (setter: (value: string) => void, value: string) => {
+    const formatted = formatStakeValue(value);
+    if (formatted) {
+      setter(formatted);
+    }
+  };
+
+  // Função effOdd igual ao original
+  const effOdd = (odd: number, comm: number) => {
+    const cc = (Number.isFinite(comm) && comm > 0) ? comm / 100 : 0;
+    return 1 + (odd - 1) * (1 - cc);
+  };
+
+  const calculateFreebet = useCallback(() => {
     const o1 = toNum(houseOdd);
     const c1 = toNum(houseCommission);
     const s1 = toNum(qualifyingStake);
     const F = toNum(freebetValue);
     const r = toNum(extractionRate);
 
-    // Validação igual ao original - c1 pode ser NaN (vazio)
+    // Validação
     if (!Number.isFinite(o1) || o1 <= 1 ||
         !Number.isFinite(F) || F < 0 ||
         !Number.isFinite(r) || r < 0 || r > 100 ||
@@ -103,20 +138,13 @@ export const CalculatorFreeProDirect = () => {
       return;
     }
 
-    // Função effOdd igual ao original
-    const effOdd = (odd: number, comm: number) => {
-      const cc = (Number.isFinite(comm) && comm > 0) ? comm / 100 : 0;
-      return 1 + (odd - 1) * (1 - cc);
-    };
-
     const o1e = effOdd(o1, c1);
-    const rF = (r / 100) * F;
-    const A = s1 * o1e - rF;
+    const rF = (r / 100) * F; // Valor efetivo do freebet
 
-    const stakes: number[] = [];
-    const eBack: number[] = [];
-    const commFrac: number[] = [];
+    // Calcular odds efetivas de cada cobertura
     const oddsOrig: number[] = [];
+    const commFrac: number[] = [];
+    const eBack: number[] = [];
 
     validEntries.forEach((entry) => {
       const L = toNum(entry.odd);
@@ -127,43 +155,112 @@ export const CalculatorFreeProDirect = () => {
 
       if (entry.isLay) {
         const denom = L - 1;
-        if (!(denom > 0)) {
-          setResults([]);
-          setTotalStake(0);
-          setRoi(0);
-          return;
+        if (denom > 0) {
+          const eLay = 1 + (1 - cfrac) / denom;
+          eBack.push(eLay);
+        } else {
+          eBack.push(1);
         }
-        const eLay = 1 + (1 - cfrac) / denom;
-        const equivStake = A / eLay;
-        stakes.push(equivStake / denom);
-        eBack.push(eLay);
       } else {
-        const e = effOdd(L, comm);
-        eBack.push(e);
-        stakes.push(A / e);
+        eBack.push(effOdd(L, comm));
       }
     });
 
-    // Arredondamento igual ao original
-    const roundStep = (v: number) => Math.round(v / rounding) * rounding;
-    const roundedStakes = stakes.map(roundStep).map(s => Math.max(s, 0.50));
+    // LÓGICA DE EQUILÍBRIO CORRIGIDA
+    // Objetivo: encontrar stakes que equilibrem o lucro em todos os cenários
+    // 
+    // Lucro cenário 0 (casa promo vence): L0 = s1 * o1e - totalStake
+    // Lucro cenário k (cobertura k vence): Lk = stakek * eBackk - totalStake + rF
+    // 
+    // Para equilibrar: L0 = L1 = L2 = ... = Ln = L
+    // 
+    // Resolvendo o sistema:
+    // s1 * o1e - (s1 + sum(stakes)) = L
+    // stakek * eBackk - (s1 + sum(stakes)) + rF = L
+    //
+    // Da primeira: sum(stakes) = s1 * o1e - s1 - L = s1 * (o1e - 1) - L
+    // Da segunda: stakek * eBackk = L + s1 + sum(stakes) - rF
+    //           = L + s1 + s1*(o1e-1) - L - rF = s1*o1e - rF
+    // Então: stakek = (s1 * o1e - rF) / eBackk
 
-    // Liabilities - exatamente como no original
+    let stakes: number[] = [];
+    const hasFixedStake = fixedStakeIndex !== null && fixedStakeIndex > 0 && fixedStakeIndex <= validEntries.length;
+    
+    if (hasFixedStake) {
+      // Se tem uma stake fixada, recalcular as outras baseado nela
+      const fixedIdx = fixedStakeIndex! - 1;
+      const fixedEntry = validEntries[fixedIdx];
+      const fixedStakeVal = toNum(fixedEntry.stake);
+      
+      if (Number.isFinite(fixedStakeVal) && fixedStakeVal > 0) {
+        // Calcular o lucro alvo baseado na stake fixada
+        // Lk = stakek * eBackk - totalStake + rF
+        // Precisamos primeiro estimar totalStake iterativamente
+        
+        // A = s1 * o1e - rF (valor que cada cobertura precisa retornar para equilibrar com cenário 0 sem considerar rF na cobertura)
+        const A = s1 * o1e - rF;
+        
+        // Se a stake fixada gera um retorno diferente, ajustamos as outras
+        const fixedReturn = fixedStakeVal * eBack[fixedIdx];
+        
+        validEntries.forEach((entry, idx) => {
+          if (idx === fixedIdx) {
+            stakes.push(fixedStakeVal);
+          } else {
+            // Manter proporção relativa
+            stakes.push(fixedReturn / eBack[idx]);
+          }
+        });
+      } else {
+        // Stake fixada inválida, usar cálculo padrão
+        const A = s1 * o1e - rF;
+        validEntries.forEach((entry, idx) => {
+          if (entry.isLay) {
+            const L = oddsOrig[idx];
+            const denom = L - 1;
+            stakes.push(A / eBack[idx] / denom);
+          } else {
+            stakes.push(A / eBack[idx]);
+          }
+        });
+      }
+    } else {
+      // Cálculo padrão de equilíbrio
+      const A = s1 * o1e - rF;
+      
+      validEntries.forEach((entry, idx) => {
+        if (entry.isLay) {
+          const L = oddsOrig[idx];
+          const denom = L - 1;
+          // Para lay: liability = stake * (odd - 1), e queremos que liability retorne A
+          // stake = A / eLay / denom
+          stakes.push(A / eBack[idx] / denom);
+        } else {
+          stakes.push(A / eBack[idx]);
+        }
+      });
+    }
+
+    // Arredondamento
+    const roundedStakes = stakes.map(s => Math.max(roundStep(s), 0.50));
+
+    // Liabilities para lay
     const liabilities = roundedStakes.map((stake, idx) => {
       return validEntries[idx].isLay ? (oddsOrig[idx] - 1) * stake : 0;
     });
 
-    // Total - exatamente como no original
+    // Total investido
     const total = s1 + roundedStakes.reduce((acc, stake, idx) => {
-      return acc + (validEntries[idx].isLay ? (oddsOrig[idx] - 1) * stake : stake);
+      return acc + (validEntries[idx].isLay ? liabilities[idx] : stake);
     }, 0);
 
-    // Lucro cenário 1 (casa promo vence)
+    // Lucro cenário 0 (casa promo vence)
     const net1 = s1 * o1e - total;
 
-    // Lucros nos outros cenários - exatamente como no original
+    // Lucros nos outros cenários
     const defs: number[] = [];
     const profits: number[] = [net1];
+    
     for (let win = 0; win < roundedStakes.length; win++) {
       let deficit;
       if (validEntries[win].isLay) {
@@ -182,6 +279,23 @@ export const CalculatorFreeProDirect = () => {
 
     setTotalStake(total);
     setRoi(roiCalc);
+    
+    // Atualizar stakes nos entries (sem marcar como manual)
+    const newEntries = [...entries];
+    let hasStakeChange = false;
+    roundedStakes.forEach((stake, idx) => {
+      if (!newEntries[idx].stakeManual) {
+        const newStakeStr = stake.toFixed(2);
+        if (newEntries[idx].stake !== newStakeStr) {
+          hasStakeChange = true;
+          newEntries[idx] = { ...newEntries[idx], stake: newStakeStr };
+        }
+      }
+    });
+    
+    if (hasStakeChange) {
+      setEntries(newEntries);
+    }
     
     const hasLay = validEntries.some(e => e.isLay);
     
@@ -207,9 +321,9 @@ export const CalculatorFreeProDirect = () => {
     ];
     
     setResults(resultsData);
-  };
+  }, [houseOdd, houseCommission, qualifyingStake, freebetValue, extractionRate, entries, numEntries, rounding, fixedStakeIndex, houseNames, roundStep]);
 
-  const calculateCashback = () => {
+  const calculateCashback = useCallback(() => {
     const odd = toNum(cashbackOdd);
     const stake = toNum(cashbackStake);
     const cbRate = toNum(cashbackRate);
@@ -238,19 +352,12 @@ export const CalculatorFreeProDirect = () => {
     }
 
     const cashbackAmount = stake * (cbRate / 100);
-
-    const effOdd = (o: number, comm: number) => {
-      const cc = (Number.isFinite(comm) && comm > 0) ? comm / 100 : 0;
-      return 1 + (o - 1) * (1 - cc);
-    };
-
     const Oeff = effOdd(odd, mainComm);
+    
     const commFrac: number[] = [];
     const eBack: number[] = [];
     const oddsOrig: number[] = [];
-    let stakes: number[] = [];
 
-    // Calcular eBack para todas as entradas (incluindo lay)
     validEntries.forEach((entry) => {
       const L = toNum(entry.odd);
       const comm = toNum(entry.commission);
@@ -259,7 +366,6 @@ export const CalculatorFreeProDirect = () => {
       oddsOrig.push(L);
 
       if (entry.isLay) {
-        // Para lay, calcular odd efetiva equivalente
         const denom = L - 1;
         eBack.push(1 + (1 - cfrac) / denom);
       } else {
@@ -269,6 +375,9 @@ export const CalculatorFreeProDirect = () => {
 
     // Calcular H para verificar se é possível nivelar
     const H = eBack.reduce((a, e) => a + (1 / e), 0);
+
+    let stakes: number[] = [];
+    const hasFixedStake = fixedStakeIndex !== null && fixedStakeIndex > 0 && fixedStakeIndex <= validEntries.length;
 
     if (H >= 1) {
       // Modo de cobertura (não consegue nivelar)
@@ -288,55 +397,84 @@ export const CalculatorFreeProDirect = () => {
         }
       });
     } else {
-      // Modo nivelado (equilibra os lucros)
-      const P = stake;
-      const C = cashbackAmount;
-      const N = -P * (1 - Oeff + H * Oeff) + H * C;
-      const S_total = P * Oeff - N;
-      const numer = N + S_total - C;
-      
-      validEntries.forEach((entry, idx) => {
-        if (entry.isLay) {
-          // Para lay no modo nivelado, calculamos a liability desejada
-          const desiredLiability = numer / eBack[idx];
-          // A stake do lay é liability / (odd - 1)
-          const L = oddsOrig[idx];
-          stakes.push(desiredLiability / (L - 1));
+      // Modo nivelado
+      if (hasFixedStake) {
+        const fixedIdx = fixedStakeIndex! - 1;
+        const fixedStakeVal = toNum(validEntries[fixedIdx].stake);
+        
+        if (Number.isFinite(fixedStakeVal) && fixedStakeVal > 0) {
+          const fixedReturn = fixedStakeVal * eBack[fixedIdx];
+          validEntries.forEach((entry, idx) => {
+            if (idx === fixedIdx) {
+              stakes.push(fixedStakeVal);
+            } else {
+              stakes.push(fixedReturn / eBack[idx]);
+            }
+          });
         } else {
-          stakes.push(numer / eBack[idx]);
+          // Cálculo padrão
+          const P = stake;
+          const C = cashbackAmount;
+          const N = -P * (1 - Oeff + H * Oeff) + H * C;
+          const S_total = P * Oeff - N;
+          const numer = N + S_total - C;
+          
+          validEntries.forEach((entry, idx) => {
+            if (entry.isLay) {
+              const desiredLiability = numer / eBack[idx];
+              const L = oddsOrig[idx];
+              stakes.push(desiredLiability / (L - 1));
+            } else {
+              stakes.push(numer / eBack[idx]);
+            }
+          });
         }
-      });
+      } else {
+        const P = stake;
+        const C = cashbackAmount;
+        const N = -P * (1 - Oeff + H * Oeff) + H * C;
+        const S_total = P * Oeff - N;
+        const numer = N + S_total - C;
+        
+        validEntries.forEach((entry, idx) => {
+          if (entry.isLay) {
+            const desiredLiability = numer / eBack[idx];
+            const L = oddsOrig[idx];
+            stakes.push(desiredLiability / (L - 1));
+          } else {
+            stakes.push(numer / eBack[idx]);
+          }
+        });
+      }
     }
 
-    // Arredondamento igual ao original
-    const roundStep = (v: number) => Math.round(v / rounding) * rounding;
-    stakes = stakes.map(roundStep).map(v => Math.max(v, 0.50));
+    // Arredondamento
+    stakes = stakes.map(s => Math.max(roundStep(s), 0.50));
 
-    // Liabilities - exatamente como no original
+    // Liabilities
     const liabilities = stakes.map((s, idx) => {
       return validEntries[idx].isLay ? (oddsOrig[idx] - 1) * s : 0;
     });
 
-    // Total - exatamente como no original (usando oddsOrig)
+    // Total
     const total = stake + stakes.reduce((acc, s, idx) => {
-      return acc + (validEntries[idx].isLay ? (oddsOrig[idx] - 1) * s : s);
+      return acc + (validEntries[idx].isLay ? liabilities[idx] : s);
     }, 0);
 
     // Lucro se ganhar aposta principal
     const net1 = stake * Oeff - total;
 
-    // Lucros nas coberturas - seguindo exatamente o código original
+    // Lucros nas coberturas
     const defs: number[] = [];
     const profits: number[] = [net1];
+    
     for (let win = 0; win < stakes.length; win++) {
       let deficit;
       if (validEntries[win].isLay) {
-        // Cálculo lay exatamente como no original
         const ganhoLay = stakes[win] * (1 - commFrac[win]);
         const liab = liabilities[win];
         deficit = ganhoLay - (total - liab);
       } else {
-        // Cálculo back exatamente como no original
         deficit = stakes[win] * eBack[win] - total;
       }
       defs.push(deficit);
@@ -348,6 +486,23 @@ export const CalculatorFreeProDirect = () => {
 
     setTotalStake(total);
     setRoi(roiCalc);
+    
+    // Atualizar stakes nos entries (sem marcar como manual)
+    const newEntries = [...entries];
+    let hasStakeChange = false;
+    stakes.forEach((stakeVal, idx) => {
+      if (!newEntries[idx].stakeManual) {
+        const newStakeStr = stakeVal.toFixed(2);
+        if (newEntries[idx].stake !== newStakeStr) {
+          hasStakeChange = true;
+          newEntries[idx] = { ...newEntries[idx], stake: newStakeStr };
+        }
+      }
+    });
+    
+    if (hasStakeChange) {
+      setEntries(newEntries);
+    }
     
     const hasLay = validEntries.some(e => e.isLay);
     
@@ -373,7 +528,7 @@ export const CalculatorFreeProDirect = () => {
     ];
     
     setResults(resultsData);
-  };
+  }, [cashbackOdd, cashbackCommission, cashbackStake, cashbackRate, entries, numEntries, rounding, fixedStakeIndex, houseNames, roundStep]);
 
   useEffect(() => {
     if (mode === 'freebet') {
@@ -381,17 +536,46 @@ export const CalculatorFreeProDirect = () => {
     } else {
       calculateCashback();
     }
-  }, [houseOdd, houseCommission, qualifyingStake, freebetValue, extractionRate, 
-      cashbackOdd, cashbackCommission, cashbackStake, cashbackRate,
-      entries, numEntries, rounding, mode]);
+  }, [mode, calculateFreebet, calculateCashback]);
 
   const updateEntry = (index: number, field: keyof FreebetEntry, value: any) => {
     const newEntries = [...entries];
-    newEntries[index] = { ...newEntries[index], [field]: value };
+    
+    if (field === 'stake') {
+      newEntries[index] = { ...newEntries[index], stake: value, stakeManual: true };
+      // Se esta stake foi fixada, manter fixada
+      if (fixedStakeIndex === index + 1) {
+        // Recalcular outras stakes baseado nesta
+      }
+    } else {
+      newEntries[index] = { ...newEntries[index], [field]: value };
+      // Se mudou odd ou commission, resetar stake manual
+      if (field === 'odd' || field === 'commission' || field === 'isLay') {
+        newEntries[index].stakeManual = false;
+      }
+    }
+    
     setEntries(newEntries);
   };
 
-  // Serializar estado para URL - PRESERVAR VALORES EXATOS
+  const handleFixStake = (index: number) => {
+    if (fixedStakeIndex === index + 1) {
+      // Desfixar
+      setFixedStakeIndex(null);
+      // Resetar flag manual de todas as stakes
+      const newEntries = entries.map(e => ({ ...e, stakeManual: false }));
+      setEntries(newEntries);
+    } else {
+      // Fixar esta stake
+      setFixedStakeIndex(index + 1);
+      // Marcar esta stake como manual
+      const newEntries = [...entries];
+      newEntries[index] = { ...newEntries[index], stakeManual: true };
+      setEntries(newEntries);
+    }
+  };
+
+  // Serializar estado para URL
   const serializeState = () => {
     const state: any = {
       mode,
@@ -400,7 +584,6 @@ export const CalculatorFreeProDirect = () => {
     };
 
     if (mode === 'freebet') {
-      // CRÍTICO: Preservar valores exatos como strings
       if (houseOdd) state.ho = String(houseOdd);
       if (houseCommission) state.hc = String(houseCommission);
       if (qualifyingStake) state.qs = String(qualifyingStake);
@@ -413,33 +596,41 @@ export const CalculatorFreeProDirect = () => {
       if (cashbackRate) state.cr = String(cashbackRate);
     }
 
-    // Adicionar entries com valores preenchidos - PRESERVAR VALORES EXATOS
     const validEntries = entries.slice(0, numEntries - 1).filter(e => e.odd || e.commission);
     if (validEntries.length > 0) {
       state.entries = validEntries.map(e => ({
         o: String(e.odd || ''),
         c: String(e.commission || ''),
-        l: e.isLay ? 1 : 0
+        l: e.isLay ? 1 : 0,
+        s: String(e.stake || ''),
+        m: e.stakeManual ? 1 : 0
       }));
+    }
+
+    if (fixedStakeIndex !== null) {
+      state.fsi = fixedStakeIndex;
     }
 
     return state;
   };
 
-  // Deserializar URL para estado - PRESERVAR VALORES EXATOS
+  // Deserializar URL para estado
   const deserializeState = (params: URLSearchParams) => {
     try {
-      const mode = params.get('mode') as 'freebet' | 'cashback' || 'freebet';
-      setMode(mode);
+      const modeParam = params.get('mode') as 'freebet' | 'cashback' || 'freebet';
+      setMode(modeParam);
 
-      const numEntries = parseInt(params.get('numEntries') || '3');
-      setNumEntries(numEntries);
+      const numEntriesParam = parseInt(params.get('numEntries') || '3');
+      setNumEntries(numEntriesParam);
 
-      const rounding = parseFloat(params.get('rounding') || '1.00');
-      setRounding(rounding);
+      const roundingParam = parseFloat(params.get('rounding') || '1.00');
+      setRounding(roundingParam);
 
-      if (mode === 'freebet') {
-        // CRÍTICO: Restaurar valores exatos como strings
+      if (params.has('fsi')) {
+        setFixedStakeIndex(parseInt(params.get('fsi')!));
+      }
+
+      if (modeParam === 'freebet') {
         if (params.has('ho')) setHouseOdd(String(params.get('ho')!));
         if (params.has('hc')) setHouseCommission(String(params.get('hc')!));
         if (params.has('qs')) setQualifyingStake(String(params.get('qs')!));
@@ -452,7 +643,6 @@ export const CalculatorFreeProDirect = () => {
         if (params.has('cr')) setCashbackRate(String(params.get('cr')!));
       }
 
-      // Restaurar entries - PRESERVAR VALORES EXATOS
       const entriesStr = params.get('entries');
       if (entriesStr) {
         try {
@@ -463,20 +653,21 @@ export const CalculatorFreeProDirect = () => {
               newEntries[idx] = {
                 odd: String(e.o || ''),
                 commission: String(e.c || ''),
-                isLay: e.l === 1
+                isLay: e.l === 1,
+                stake: String(e.s || ''),
+                stakeManual: e.m === 1
               };
             }
           });
           setEntries(newEntries);
-          console.log('✅ Dados FreePro carregados da URL com precisão total');
         } catch (error) {
-          console.error('❌ Erro ao restaurar entries:', error);
+          console.error('Erro ao restaurar entries:', error);
         }
       }
     } catch (error) {
-      console.error('❌ Erro ao carregar dados da URL:', error);
+      console.error('Erro ao carregar dados da URL:', error);
       toast({
-        title: "❌ Erro ao carregar",
+        title: "Erro ao carregar",
         description: "Erro ao carregar dados compartilhados.",
         variant: "destructive"
       });
@@ -504,12 +695,12 @@ export const CalculatorFreeProDirect = () => {
     try {
       await navigator.clipboard.writeText(url);
       toast({
-        title: "✅ Link copiado!",
+        title: "Link copiado!",
         description: "Compartilhe com outros usuários.",
       });
     } catch (error) {
       toast({
-        title: "✅ Link gerado",
+        title: "Link gerado",
         description: "Copie o endereço da barra do navegador.",
       });
       window.history.pushState({}, '', url);
@@ -521,44 +712,38 @@ export const CalculatorFreeProDirect = () => {
   // Limpar todos os dados
   const handleClear = () => {
     setIsClearing(true);
-    // Limpar URL
     window.history.pushState({}, '', window.location.pathname + window.location.hash);
     
-    // Reset modo e configurações
     setMode('freebet');
     setNumEntries(3);
     setRounding(1.00);
+    setFixedStakeIndex(null);
     
-    // Reset nomes
     setHouseNames([
       "Casa Promo",
       ...Array(5).fill(null).map((_, i) => `Casa ${i + 2}`)
     ]);
     setEditingName(null);
     
-    // Reset campos Freebet
     setHouseOdd("");
     setHouseCommission("");
     setQualifyingStake("");
     setFreebetValue("");
     setExtractionRate("70");
     
-    // Reset campos Cashback
     setCashbackOdd("");
     setCashbackCommission("");
     setCashbackStake("");
     setCashbackRate("");
     
-    // Reset entries
-    setEntries(Array(5).fill(null).map(() => ({ odd: "", commission: "", isLay: false })));
+    setEntries(Array(5).fill(null).map(() => ({ odd: "", commission: "", isLay: false, stake: "", stakeManual: false })));
     
-    // Reset resultados
     setResults([]);
     setTotalStake(0);
     setRoi(0);
     
     toast({
-      title: "✅ Dados limpos",
+      title: "Dados limpos",
       description: "Todos os campos foram limpos com sucesso.",
     });
     
@@ -625,6 +810,10 @@ export const CalculatorFreeProDirect = () => {
             <option value="4">4 Mercados</option>
             <option value="5">5 Mercados</option>
             <option value="6">6 Mercados</option>
+            <option value="7">7 Mercados</option>
+            <option value="8">8 Mercados</option>
+            <option value="9">9 Mercados</option>
+            <option value="10">10 Mercados</option>
           </select>
         </div>
 
@@ -632,11 +821,7 @@ export const CalculatorFreeProDirect = () => {
           <div className="stat-label">Arredondamento</div>
           <select
             value={rounding}
-            onChange={(e) => {
-              const newRounding = parseFloat(e.target.value);
-              console.log('Arredondamento alterado para:', newRounding);
-              setRounding(newRounding);
-            }}
+            onChange={(e) => setRounding(parseFloat(e.target.value))}
             className="form-select mt-3 w-full"
           >
             <option value={0.01}>R$ 0,01</option>
@@ -645,9 +830,29 @@ export const CalculatorFreeProDirect = () => {
             <option value={1.00}>R$ 1,00</option>
           </select>
         </div>
+
+        <div className="stat-card">
+          <div className="stat-label">Visualização</div>
+          <div className="view-toggle mt-3">
+            <button
+              onClick={() => setViewMode('cards')}
+              className={`btn-view ${viewMode === 'cards' ? 'active' : ''}`}
+              title="Modo Cards"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`btn-view ${viewMode === 'table' ? 'active' : ''}`}
+              title="Modo Tabela"
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Casa Promoção */}
+      {/* Casa Promoção - Freebet */}
       {mode === 'freebet' && (
         <div className="card mb-6">
           {editingName === 0 ? (
@@ -708,7 +913,8 @@ export const CalculatorFreeProDirect = () => {
                 type="text"
                 value={qualifyingStake}
                 onChange={(e) => setQualifyingStake(e.target.value)}
-                placeholder="ex: 50"
+                onBlur={(e) => handleMoneyBlur(setQualifyingStake, e.target.value)}
+                placeholder="0,00"
                 className="form-input"
               />
             </div>
@@ -718,7 +924,8 @@ export const CalculatorFreeProDirect = () => {
                 type="text"
                 value={freebetValue}
                 onChange={(e) => setFreebetValue(e.target.value)}
-                placeholder="ex: 50"
+                onBlur={(e) => handleMoneyBlur(setFreebetValue, e.target.value)}
+                placeholder="0,00"
                 className="form-input"
               />
             </div>
@@ -798,7 +1005,8 @@ export const CalculatorFreeProDirect = () => {
                 type="text"
                 value={cashbackStake}
                 onChange={(e) => setCashbackStake(e.target.value)}
-                placeholder="ex: 100"
+                onBlur={(e) => handleMoneyBlur(setCashbackStake, e.target.value)}
+                placeholder="0,00"
                 className="form-input"
               />
             </div>
@@ -818,72 +1026,204 @@ export const CalculatorFreeProDirect = () => {
 
       {/* Coberturas */}
       <div className="card mb-6">
-        <div className="section-title">Coberturas</div>
-        <div className="house-grid">
-          {entries.slice(0, numEntries - 1).map((entry, idx) => (
-            <div key={idx} className="house-card">
-              {editingName === idx + 1 ? (
-                <input
-                  type="text"
-                  value={houseNames[idx + 1]}
-                  onChange={(e) => {
-                    const newNames = [...houseNames];
-                    newNames[idx + 1] = e.target.value;
-                    setHouseNames(newNames);
-                  }}
-                  onBlur={() => setEditingName(null)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      setEditingName(null);
-                    }
-                  }}
-                  autoFocus
-                  className="house-title bg-transparent border-b-2 border-[hsl(var(--shark-gradient-start))] outline-none w-full mb-4"
-                />
-              ) : (
-                <h3 
-                  className="house-title cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => setEditingName(idx + 1)}
-                  title="Clique para editar o nome"
-                >
-                  {houseNames[idx + 1]}
-                </h3>
-              )}
-              
-              <div className="grid-2 mb-4">
-                <div className="form-group">
-                  <label className="form-label">Odd</label>
-                  <input
-                    type="text"
-                    value={entry.odd}
-                    onChange={(e) => updateEntry(idx, 'odd', e.target.value)}
-                    placeholder="ex: 2.50"
-                    className="form-input"
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Comissão (%)</label>
-                  <input
-                    type="text"
-                    value={entry.commission}
-                    onChange={(e) => updateEntry(idx, 'commission', e.target.value)}
-                    placeholder="ex: 0"
-                    className="form-input"
-                  />
-                </div>
-              </div>
-
-              <label className="checkbox-group">
-                <input
-                  type="checkbox"
-                  checked={entry.isLay}
-                  onChange={(e) => updateEntry(idx, 'isLay', e.target.checked)}
-                />
-                <span>Lay (Contra)</span>
-              </label>
-            </div>
-          ))}
+        <div className="section-title-wrapper">
+          <div className="section-title-left">
+            <span className="section-title" style={{ marginBottom: 0, borderBottom: 'none', paddingBottom: 0 }}>
+              Coberturas
+            </span>
+            <span className={`houses-counter ${entries.slice(0, numEntries - 1).filter(e => parseFlex(e.odd) > 0).length === numEntries - 1 && numEntries > 1 ? 'complete' : ''}`}>
+              {entries.slice(0, numEntries - 1).filter(e => parseFlex(e.odd) > 0).length}/{numEntries - 1} preenchidos
+            </span>
+          </div>
         </div>
+        
+        {viewMode === 'cards' ? (
+          <div className="house-grid" key="cards-view">
+            {entries.slice(0, numEntries - 1).map((entry, idx) => (
+              <div key={idx} className="house-card">
+                {editingName === idx + 1 ? (
+                  <input
+                    type="text"
+                    value={houseNames[idx + 1]}
+                    onChange={(e) => {
+                      const newNames = [...houseNames];
+                      newNames[idx + 1] = e.target.value;
+                      setHouseNames(newNames);
+                    }}
+                    onBlur={() => setEditingName(null)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setEditingName(null);
+                      }
+                    }}
+                    autoFocus
+                    className="house-title bg-transparent border-b-2 border-[hsl(var(--shark-gradient-start))] outline-none w-full mb-4"
+                  />
+                ) : (
+                  <h3 
+                    className="house-title cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => setEditingName(idx + 1)}
+                    title="Clique para editar o nome"
+                  >
+                    {houseNames[idx + 1]}
+                  </h3>
+                )}
+                
+                <div className="grid-2 mb-4">
+                  <div className="form-group">
+                    <label className="form-label">Odd</label>
+                    <input
+                      type="text"
+                      value={entry.odd}
+                      onChange={(e) => updateEntry(idx, 'odd', e.target.value)}
+                      placeholder="ex: 2.50"
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Comissão (%)</label>
+                    <input
+                      type="text"
+                      value={entry.commission}
+                      onChange={(e) => updateEntry(idx, 'commission', e.target.value)}
+                      placeholder="ex: 0"
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+
+                {/* Stake editável */}
+                <div className="form-group mb-4">
+                  <label className="form-label">Stake</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">R$</span>
+                    <input
+                      type="text"
+                      value={entry.stake}
+                      onChange={(e) => updateEntry(idx, 'stake', e.target.value)}
+                      placeholder="0.00"
+                      className="form-input pl-10"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => updateEntry(idx, 'isLay', !entry.isLay)}
+                  className={`btn-toggle-backlay ${entry.isLay ? 'active' : ''}`}
+                >
+                  {entry.isLay ? 'LAY' : 'BACK'}
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="house-table-container" key="table-view">
+            <table className="house-table">
+              <thead>
+                <tr>
+                  <th className="col-casa">Casa</th>
+                  <th className="col-odd">ODD</th>
+                  <th className="col-commission">COMISSÃO</th>
+                  <th className="col-stake">STAKE</th>
+                  <th className="col-backlay">BACK/LAY</th>
+                  <th className="col-deficit">DEFICIT</th>
+                  <th className="col-lucro">LUCRO</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.slice(0, numEntries - 1).map((entry, idx) => (
+                  <tr className="house-row" key={idx}>
+                    <td>
+                      {editingName === idx + 1 ? (
+                        <input
+                          type="text"
+                          value={houseNames[idx + 1]}
+                          onChange={(e) => {
+                            const newNames = [...houseNames];
+                            newNames[idx + 1] = e.target.value;
+                            setHouseNames(newNames);
+                          }}
+                          onBlur={() => setEditingName(null)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              setEditingName(null);
+                            }
+                          }}
+                          autoFocus
+                        className="table-input"
+                        />
+                      ) : (
+                        <span 
+                          className="house-name-editable cursor-pointer hover:opacity-80"
+                          onClick={() => setEditingName(idx + 1)}
+                          title="Clique para editar"
+                        >
+                          {houseNames[idx + 1]}
+                        </span>
+                      )}
+                    </td>
+                    <td className="col-odd">
+                      <input
+                        type="text"
+                        value={entry.odd}
+                        onChange={(e) => updateEntry(idx, 'odd', e.target.value)}
+                        placeholder="2.50"
+                        className="table-input"
+                        style={{ background: 'hsl(var(--background))' }}
+                      />
+                    </td>
+                    <td className="col-commission">
+                      <input
+                        type="text"
+                        value={entry.commission}
+                        onChange={(e) => updateEntry(idx, 'commission', e.target.value)}
+                        placeholder="0"
+                        className="table-input-mini"
+                        style={{ background: 'hsl(var(--background))' }}
+                      />
+                    </td>
+                    <td className="col-stake">
+                      <div className="table-stake-wrapper">
+                        <span className="currency-prefix">R$</span>
+                        <input
+                          type="text"
+                          value={entry.stake}
+                          onChange={(e) => updateEntry(idx, 'stake', e.target.value)}
+                          onBlur={(e) => handleStakeBlur(idx, e.target.value)}
+                          placeholder="0,00"
+                          className="stake-input"
+                          style={{ background: 'hsl(var(--background))' }}
+                        />
+                      </div>
+                    </td>
+                    <td className="col-backlay">
+                      <button
+                        onClick={() => updateEntry(idx, 'isLay', !entry.isLay)}
+                        className={`btn-toggle-mini ${entry.isLay ? 'active' : ''}`}
+                      >
+                        {entry.isLay ? 'LAY' : 'BACK'}
+                      </button>
+                    </td>
+                    <td className="col-deficit">
+                      {results[idx + 1] ? (
+                        <span className={parseFlex(results[idx + 1].deficit?.replace?.(/[^\d.,-]/g, '') || '0') >= 0 ? 'profit-positive' : 'profit-negative'}>
+                          {results[idx + 1].deficit || '-'}
+                        </span>
+                      ) : '-'}
+                    </td>
+                    <td className="col-lucro profit-cell">
+                      {results[idx + 1] ? (
+                        <span className={parseFlex(results[idx + 1].profit?.replace?.(/[^\d.,-]/g, '') || '0') >= 0 ? 'profit-positive' : 'profit-negative'}>
+                          {results[idx + 1].profit || '-'}
+                        </span>
+                      ) : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Botões Ação */}
