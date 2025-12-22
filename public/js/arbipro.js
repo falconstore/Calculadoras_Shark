@@ -10,7 +10,7 @@ export class ArbiPro {
     this.MAX_HOUSES = APP_CONFIG.calculators.arbipro.maxHouses;
     this.numHouses = APP_CONFIG.calculators.arbipro.defaultHouses;
     this.roundingValue = APP_CONFIG.calculators.arbipro.defaultRounding;
-    this.displayRounding = "0.01";
+    this.displayRounding = APP_CONFIG.calculators.arbipro.defaultRounding.toFixed(2);
     this.manualOverrides = {};
     this.pending = false;
     this.viewMode = "cards"; // 'cards' ou 'table'
@@ -1212,10 +1212,11 @@ export class ArbiPro {
     }
     
     const roundSelect = document.getElementById('rounding');
+    const defaultRound = APP_CONFIG.calculators.arbipro.defaultRounding;
     if (roundSelect) {
-      roundSelect.value = '0.01';
-      this.roundingValue = 0.01;
-      this.displayRounding = '0.01';
+      roundSelect.value = defaultRound.toFixed(2);
+      this.roundingValue = defaultRound;
+      this.displayRounding = defaultRound.toFixed(2);
     }
 
     // Reset toggles globais
