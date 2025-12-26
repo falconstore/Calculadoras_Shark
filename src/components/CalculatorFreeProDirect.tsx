@@ -511,7 +511,25 @@ export const CalculatorFreeProDirect = () => {
     } else {
       calculateCashback();
     }
-  }, [mode, calculateFreebet, calculateCashback]);
+  }, [
+    mode, 
+    calculateFreebet, 
+    calculateCashback,
+    // Dependências diretas para garantir recálculo quando valores mudam
+    houseOdd, 
+    houseCommission, 
+    qualifyingStake, 
+    freebetValue, 
+    extractionRate,
+    cashbackOdd,
+    cashbackCommission,
+    cashbackStake,
+    cashbackRate,
+    entries, 
+    numEntries, 
+    rounding, 
+    fixedStakeIndex
+  ]);
   const updateEntry = (index: number, field: keyof FreebetEntry, value: any) => {
     const newEntries = [...entries];
     if (field === "stake") {
