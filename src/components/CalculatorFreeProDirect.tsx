@@ -172,28 +172,51 @@ export const CalculatorFreeProDirect = () => {
     let stakes: number[] = [];
     const hasFixedStake = fixedStakeIndex !== null && fixedStakeIndex > 0 && fixedStakeIndex <= validEntries.length;
     if (hasFixedStake) {
-      // Se tem uma stake fixada, recalcular as outras baseado nela
+      // SOLUÇÃO ITERATIVA PARA STAKE FIXA
+      // Quando uma stake é fixada, precisamos recalcular as outras para equilibrar os lucros
       const fixedIdx = fixedStakeIndex! - 1;
       const fixedEntry = validEntries[fixedIdx];
       const fixedStakeVal = toNum(fixedEntry.stake);
+      
       if (Number.isFinite(fixedStakeVal) && fixedStakeVal > 0) {
-        // Calcular o lucro alvo baseado na stake fixada
-        // Lk = stakek * eBackk - totalStake + rF
-        // Precisamos primeiro estimar totalStake iterativamente
-
-        // A = s1 * o1e - rF (valor que cada cobertura precisa retornar para equilibrar com cenário 0 sem considerar rF na cobertura)
-        const A = s1 * o1e - rF;
-
-        // Se a stake fixada gera um retorno diferente, ajustamos as outras
-        const fixedReturn = fixedStakeVal * eBack[fixedIdx];
+        // Passo 1: Calcular o retorno bruto que a stake fixada gera
+        const fixedGrossReturn = fixedStakeVal * eBack[fixedIdx];
+        
+        // Passo 2: Para equilibrar lucros, TODAS as coberturas precisam gerar o MESMO retorno bruto
+        // porque: Lucro_k = retorno_k - totalStake + rF
+        // Se retorno_k = retorno_fixo para todos, então todos os lucros serão iguais
+        
+        // Passo 3: Calcular stakes iniciais baseado no retorno bruto fixo
         validEntries.forEach((entry, idx) => {
           if (idx === fixedIdx) {
             stakes.push(fixedStakeVal);
           } else {
-            // Manter proporção relativa
-            stakes.push(fixedReturn / eBack[idx]);
+            // stake = retornoBruto / eBack para ter o mesmo retorno
+            stakes.push(fixedGrossReturn / eBack[idx]);
           }
         });
+        
+        // Passo 4: Verificar se o cenário 0 (casa promo vence) também está equilibrado
+        // Para isso, precisamos ajustar as stakes para que:
+        // Lucro0 = s1 * o1e - totalStake
+        // LucroK = stakeK * eBackK - totalStake + rF
+        // 
+        // Se queremos Lucro0 = LucroK:
+        // s1 * o1e - totalStake = stakeK * eBackK - totalStake + rF
+        // s1 * o1e = stakeK * eBackK + rF
+        // stakeK = (s1 * o1e - rF) / eBackK
+        //
+        // Mas a stake está FIXA, então o "lucro alvo" é determinado por ela:
+        // LucroAlvo = fixedGrossReturn - totalStake + rF
+        //
+        // E para o cenário 0 atingir esse lucro:
+        // s1 * o1e - totalStake = LucroAlvo
+        // s1 * o1e - totalStake = fixedGrossReturn - totalStake + rF
+        // s1 * o1e = fixedGrossReturn + rF
+        //
+        // Se isso NÃO for verdade, o cenário 0 terá lucro diferente.
+        // Nesse caso, mantemos as stakes calculadas e o usuário verá a diferença.
+        
       } else {
         // Stake fixada inválida, usar cálculo padrão
         const A = s1 * o1e - rF;
