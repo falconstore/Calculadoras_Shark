@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "@/hooks/use-toast";
-import { Link, Trash2, Loader2, LayoutGrid, List } from "lucide-react";
+import { Link, Trash2, Loader2, LayoutGrid, List, RefreshCw } from "lucide-react";
 interface FreebetEntry {
   odd: string;
   commission: string;
@@ -171,83 +171,59 @@ export const CalculatorFreeProDirect = () => {
 
     let stakes: number[] = [];
     const hasFixedStake = fixedStakeIndex !== null && fixedStakeIndex > 0 && fixedStakeIndex <= validEntries.length;
+    
+    // Primeiro, calcular as stakes "ideais" sem stake fixa (para referência)
+    const A = s1 * o1e - rF;
+    const idealStakes = validEntries.map((entry, idx) => {
+      if (entry.isLay) {
+        const L = oddsOrig[idx];
+        const denom = L - 1;
+        return A / eBack[idx] / denom;
+      } else {
+        return A / eBack[idx];
+      }
+    });
+    
     if (hasFixedStake) {
-      // SOLUÇÃO ITERATIVA PARA STAKE FIXA
-      // Quando uma stake é fixada, precisamos recalcular as outras para equilibrar os lucros
+      // ESCALONAMENTO PROPORCIONAL PARA STAKE FIXA
+      // Quando uma stake é fixada, calculamos o fator de escala e aplicamos a todas
+      // Isso mantém a PROPORÇÃO entre as stakes, preservando o equilíbrio entre coberturas
       const fixedIdx = fixedStakeIndex! - 1;
       const fixedEntry = validEntries[fixedIdx];
       const fixedStakeVal = toNum(fixedEntry.stake);
       
-      if (Number.isFinite(fixedStakeVal) && fixedStakeVal > 0) {
-        // Passo 1: Calcular o retorno bruto que a stake fixada gera
-        const fixedGrossReturn = fixedStakeVal * eBack[fixedIdx];
+      if (Number.isFinite(fixedStakeVal) && fixedStakeVal > 0 && idealStakes[fixedIdx] > 0) {
+        // Calcular fator de escala baseado na diferença entre stake ideal e stake fixada
+        const idealFixed = idealStakes[fixedIdx];
+        const scaleFactor = fixedStakeVal / idealFixed;
         
-        // Passo 2: Para equilibrar lucros, TODAS as coberturas precisam gerar o MESMO retorno bruto
-        // porque: Lucro_k = retorno_k - totalStake + rF
-        // Se retorno_k = retorno_fixo para todos, então todos os lucros serão iguais
-        
-        // Passo 3: Calcular stakes iniciais baseado no retorno bruto fixo
+        // Aplicar o mesmo fator a TODAS as outras stakes para manter proporção
         validEntries.forEach((entry, idx) => {
           if (idx === fixedIdx) {
+            // Stake fixada: usar valor EXATO do usuário
             stakes.push(fixedStakeVal);
           } else {
-            // stake = retornoBruto / eBack para ter o mesmo retorno
-            stakes.push(fixedGrossReturn / eBack[idx]);
+            // Outras stakes: escalar proporcionalmente
+            stakes.push(idealStakes[idx] * scaleFactor);
           }
         });
-        
-        // Passo 4: Verificar se o cenário 0 (casa promo vence) também está equilibrado
-        // Para isso, precisamos ajustar as stakes para que:
-        // Lucro0 = s1 * o1e - totalStake
-        // LucroK = stakeK * eBackK - totalStake + rF
-        // 
-        // Se queremos Lucro0 = LucroK:
-        // s1 * o1e - totalStake = stakeK * eBackK - totalStake + rF
-        // s1 * o1e = stakeK * eBackK + rF
-        // stakeK = (s1 * o1e - rF) / eBackK
-        //
-        // Mas a stake está FIXA, então o "lucro alvo" é determinado por ela:
-        // LucroAlvo = fixedGrossReturn - totalStake + rF
-        //
-        // E para o cenário 0 atingir esse lucro:
-        // s1 * o1e - totalStake = LucroAlvo
-        // s1 * o1e - totalStake = fixedGrossReturn - totalStake + rF
-        // s1 * o1e = fixedGrossReturn + rF
-        //
-        // Se isso NÃO for verdade, o cenário 0 terá lucro diferente.
-        // Nesse caso, mantemos as stakes calculadas e o usuário verá a diferença.
-        
       } else {
-        // Stake fixada inválida, usar cálculo padrão
-        const A = s1 * o1e - rF;
-        validEntries.forEach((entry, idx) => {
-          if (entry.isLay) {
-            const L = oddsOrig[idx];
-            const denom = L - 1;
-            stakes.push(A / eBack[idx] / denom);
-          } else {
-            stakes.push(A / eBack[idx]);
-          }
-        });
+        // Stake fixada inválida ou ideal zero, usar cálculo padrão
+        stakes = [...idealStakes];
       }
     } else {
       // Cálculo padrão de equilíbrio
-      const A = s1 * o1e - rF;
-      validEntries.forEach((entry, idx) => {
-        if (entry.isLay) {
-          const L = oddsOrig[idx];
-          const denom = L - 1;
-          // Para lay: liability = stake * (odd - 1), e queremos que liability retorne A
-          // stake = A / eLay / denom
-          stakes.push(A / eBack[idx] / denom);
-        } else {
-          stakes.push(A / eBack[idx]);
-        }
-      });
+      stakes = [...idealStakes];
     }
 
-    // Arredondamento
-    const roundedStakes = stakes.map(s => Math.max(roundStep(s), 0.5));
+    // Arredondamento - NÃO arredondar stake que foi fixada manualmente
+    const roundedStakes = stakes.map((s, idx) => {
+      // Se esta stake foi fixada manualmente, preservar valor EXATO
+      if (hasFixedStake && idx === fixedStakeIndex! - 1) {
+        return Math.max(s, 0.5);
+      }
+      return Math.max(roundStep(s), 0.5);
+    });
 
     // Liabilities para lay
     const liabilities = roundedStakes.map((stake, idx) => {
@@ -282,17 +258,20 @@ export const CalculatorFreeProDirect = () => {
     setTotalStake(total);
     setRoi(roiCalc);
 
-    // Atualizar stakes nos entries (sem marcar como manual)
+    // Atualizar stakes nos entries - só preservar a stake fixada pelo fixedStakeIndex
     const newEntries = [...entries];
     let hasStakeChange = false;
     roundedStakes.forEach((stake, idx) => {
-      if (!newEntries[idx].stakeManual) {
+      // Só preservar a stake se for exatamente a fixada pelo índice
+      const isFixedStake = hasFixedStake && idx === fixedStakeIndex! - 1;
+      if (!isFixedStake) {
         const newStakeStr = stake.toFixed(2);
         if (newEntries[idx].stake !== newStakeStr) {
           hasStakeChange = true;
           newEntries[idx] = {
             ...newEntries[idx],
-            stake: newStakeStr
+            stake: newStakeStr,
+            stakeManual: false // Limpar flag para stakes não fixadas
           };
         }
       }
@@ -467,17 +446,20 @@ export const CalculatorFreeProDirect = () => {
     setTotalStake(total);
     setRoi(roiCalc);
 
-    // Atualizar stakes nos entries (sem marcar como manual)
+    // Atualizar stakes nos entries - só preservar a stake fixada pelo fixedStakeIndex
     const newEntries = [...entries];
     let hasStakeChange = false;
     stakes.forEach((stakeVal, idx) => {
-      if (!newEntries[idx].stakeManual) {
+      // Só preservar a stake se for exatamente a fixada pelo índice
+      const isFixedStake = hasFixedStake && idx === fixedStakeIndex! - 1;
+      if (!isFixedStake) {
         const newStakeStr = stakeVal.toFixed(2);
         if (newEntries[idx].stake !== newStakeStr) {
           hasStakeChange = true;
           newEntries[idx] = {
             ...newEntries[idx],
-            stake: newStakeStr
+            stake: newStakeStr,
+            stakeManual: false // Limpar flag para stakes não fixadas
           };
         }
       }
@@ -533,11 +515,24 @@ export const CalculatorFreeProDirect = () => {
   const updateEntry = (index: number, field: keyof FreebetEntry, value: any) => {
     const newEntries = [...entries];
     if (field === "stake") {
-      newEntries[index] = {
-        ...newEntries[index],
-        stake: value,
-        stakeManual: true
-      };
+      // Ao editar stake manualmente: 
+      // 1. Marcar APENAS esta entry como manual
+      // 2. Limpar stakeManual de todas as outras e resetar stakes para forçar recálculo
+      newEntries.forEach((entry, idx) => {
+        if (idx === index) {
+          newEntries[idx] = {
+            ...entry,
+            stake: value,
+            stakeManual: true
+          };
+        } else {
+          // Limpar flag manual e stake das outras para forçar recálculo
+          newEntries[idx] = {
+            ...entry,
+            stakeManual: false
+          };
+        }
+      });
       // Setar fixedStakeIndex para recalcular baseado nesta stake editada
       setFixedStakeIndex(index + 1);
     } else {
@@ -731,6 +726,20 @@ export const CalculatorFreeProDirect = () => {
       description: "Todos os campos foram limpos com sucesso."
     });
     setTimeout(() => setIsClearing(false), 500);
+  };
+
+  // Auto-balancear: remove stake manual e recalcula tudo
+  const handleAutoBalance = () => {
+    setFixedStakeIndex(null);
+    setEntries(prev => prev.map(entry => ({
+      ...entry,
+      stake: "",
+      stakeManual: false
+    })));
+    toast({
+      title: "Auto-balanceado",
+      description: "Stakes recalculadas para equilibrar todos os cenários."
+    });
   };
 
   // Carregar estado da URL ao montar
@@ -1029,6 +1038,22 @@ export const CalculatorFreeProDirect = () => {
               <Trash2 className="w-4 h-4" />
               Limpar Dados
             </>}
+        </button>
+
+        {/* Botão Auto-Balancear - sempre visível, desabilitado quando não há stake fixa */}
+        <button 
+          onClick={handleAutoBalance} 
+          disabled={fixedStakeIndex === null}
+          className={`btn flex items-center gap-2 ${
+            fixedStakeIndex !== null 
+              ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600" 
+              : "bg-muted text-muted-foreground cursor-not-allowed opacity-50"
+          }`}
+          style={{ minWidth: "180px" }}
+          title={fixedStakeIndex === null ? "Edite uma stake manualmente para ativar" : "Recalcular todas as stakes automaticamente"}
+        >
+          <RefreshCw className="w-4 h-4" />
+          Auto-balancear
         </button>
       </div>
 
